@@ -1,6 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 2,
+	"EngineVersion": "4.20.0",
 	"VersionName": "1.0",
 	"FriendlyName": "Rider Integration",
 	"Description": "Allows access to source code in Rider.",
@@ -13,7 +14,7 @@
 	"EnabledByDefault": true,
 	"CanContainContent": false,
 	"IsBetaVersion": false,
-	"Installed": false,
+	"Installed": true,
 	"Modules": [
 		{
 			"Name": "RiderSourceCodeAccess",
