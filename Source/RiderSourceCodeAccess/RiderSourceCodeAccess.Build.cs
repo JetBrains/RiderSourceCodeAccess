@@ -1,26 +1,22 @@
-// Copyright 1998-2018 Epic Games, Inc. All Rights Reserved.
-using UnrealBuildTool;
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 namespace UnrealBuildTool.Rules
 {
 	public class RiderSourceCodeAccess : ModuleRules
 	{
         public RiderSourceCodeAccess(ReadOnlyTargetRules Target) : base(Target)
-		{
+        {
+	        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		    PrivateDependencyModuleNames.AddRange(
-                new string[]
+                new []
                 {
                     "Core",
                     "SourceCodeAccess",
                     "DesktopPlatform",
-					"Projects"
+					"Projects",
+					"Json"
                 }
             );
-
-            if (Target.bBuildEditor)
-            {
-                PrivateDependencyModuleNames.Add("HotReload");
-            }
 
             if (Target.Platform == UnrealTargetPlatform.Win64)
             {

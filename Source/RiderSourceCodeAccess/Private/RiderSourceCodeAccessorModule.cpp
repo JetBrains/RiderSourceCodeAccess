@@ -1,4 +1,4 @@
-// Copyright 1998-2018 Epic Games, Inc. All Rights Reserved.
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "RiderSourceCodeAccessorModule.h"
 
@@ -23,12 +23,20 @@ void FRiderSourceCodeAccessModule::ShutdownModule()
 void FRiderSourceCodeAccessModule::StartupModule()
 {
 	TArray<FRiderPathLocator::FInstallInfo> InstallInfos = FRiderPathLocator::CollectAllPaths();
-	for (const auto & InstallInfo : InstallInfos)
+	InstallInfos.Sort();
+	for (const FRiderPathLocator::FInstallInfo & InstallInfo : InstallInfos)
 	{
 		TSharedRef<FRiderSourceCodeAccessor> RiderSourceCodeAccessor = MakeShareable(new FRiderSourceCodeAccessor());
 		RiderSourceCodeAccessor->Startup(InstallInfo);
 		IModularFeatures::Get().RegisterModularFeature(TEXT("SourceCodeAccessor"), &RiderSourceCodeAccessor.Get());
 		RiderSourceCodeAccessors.Add(RiderSourceCodeAccessor->GetFName(), RiderSourceCodeAccessor);
+	}
+	if(InstallInfos.Num() != 0)
+	{
+		TSharedRef<FRiderSourceCodeAccessor> RiderSourceCodeAccessor = MakeShareable(new FRiderSourceCodeAccessor());
+		RiderSourceCodeAccessor->Startup(InstallInfos.Last(), FRiderSourceCodeAccessor::ACCESS_TYPE::AGGREGATE);
+		IModularFeatures::Get().RegisterModularFeature(TEXT("SourceCodeAccessor"), &RiderSourceCodeAccessor.Get());
+		RiderSourceCodeAccessors.Add("Rider", RiderSourceCodeAccessor);		
 	}
 }
 

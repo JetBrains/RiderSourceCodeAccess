@@ -1,73 +1,97 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
 #include "RiderPathLocator.h"
 
-#include "Misc/Paths.h"
 #include "GenericPlatform/GenericPlatformFile.h"
 #include "HAL/FileManager.h"
+#include "Internationalization/Regex.h"
 #include "Misc/FileHelper.h"
-#include "Windows/WindowsPlatformMisc.h"
-#include "Runtime/Launch/Resources/Version.h"
+#include "Misc/Paths.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
 
+#include "Windows/WindowsPlatformMisc.h"
 #include "Windows/AllowWindowsPlatformTypes.h"
 #include <winreg.h>
+#include "Windows/HideWindowsPlatformTypes.h"
 
 namespace FRiderPathLocator
 {
-
-	struct FCollectFoldersVisitor : IPlatformFile::FDirectoryVisitor
+	static TArray<FInstallInfo> CollectPathsFromToolbox()
 	{
-		bool Visit(const TCHAR* FilenameOrDirectory, bool bIsDirectory) override
+		FString ToolboxBinPath;
+
+		if (!FWindowsPlatformMisc::QueryRegKey(HKEY_CURRENT_USER, TEXT("Software\\JetBrains\\Toolbox\\"), TEXT(""), ToolboxBinPath)) return {};
+
+		FPaths::NormalizeDirectoryName(ToolboxBinPath);
+		const FString PatternString(TEXT("(.*)/bin"));
+		const FRegexPattern Pattern(PatternString);
+		FRegexMatcher ToolboxPathMatcher(Pattern, ToolboxBinPath);
+		if (!ToolboxPathMatcher.FindNext()) return {};
+
+		const FString ToolboxPath = ToolboxPathMatcher.GetCaptureGroup(1);
+		FString InstallPath = ToolboxPath;
+		const FString SettingJsonPath = FPaths::Combine(ToolboxPath, FString(".settings.json"));
+		if (FPaths::FileExists(SettingJsonPath))
 		{
-			if (bIsDirectory)
-				Folders.Add(FilenameOrDirectory);
-			return true;
+			FString JsonStr;
+			FFileHelper::LoadFileToString(JsonStr, *SettingJsonPath);
+			TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonStr);
+			TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+			if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid())
+			{
+				FString InstallLocation;
+				if (JsonObject->TryGetStringField(TEXT("install_location"), InstallLocation))
+				{
+					if (!InstallLocation.IsEmpty())
+					{
+						InstallPath = InstallLocation;
+					}
+				}
+			}
 		}
-		TArray<FString> Folders;
-	};
+		if(!FPaths::DirectoryExists(InstallPath)) return {};
+		
+		const FString ToolboxRiderRootPath = FPaths::Combine(InstallPath, FString("apps"));
+		if(!FPaths::DirectoryExists(ToolboxRiderRootPath)) return {};
 
-	static TArray<FInstallInfo> CollectPathsFromToolbox(const FString& IDEName)
-	{
-		TArray<FInstallInfo> RiderPaths;
-
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 20
-		TCHAR CAppDataLocalPath[4096];
-		FPlatformMisc::GetEnvironmentVariable(TEXT("LOCALAPPDATA"), CAppDataLocalPath, ARRAY_COUNT(AppDataLocalPath));
-		const FString FAppDataLocalPath = CAppDataLocalPath;
-#else
-		const FString FAppDataLocalPath = FPlatformMisc::GetEnvironmentVariable(TEXT("LOCALAPPDATA"));
-#endif
-		const FString ToolboxRiderRootPath = FPaths::Combine(*FAppDataLocalPath, TEXT("JetBrains\\Toolbox\\apps"), *IDEName);
-
-		FCollectFoldersVisitor ChannelDirs;
-		FCollectFoldersVisitor RiderDirs;
-		IFileManager::Get().IterateDirectory(*ToolboxRiderRootPath, ChannelDirs);
-		for (const auto & ChannelDir : ChannelDirs.Folders)
+		TArray<FInstallInfo> RiderInstallInfos;
+		TArray<FString> RiderPaths;
+		IFileManager::Get().FindFilesRecursive(RiderPaths, *ToolboxRiderRootPath, TEXT("rider64.exe"), true, false);
+		for(const FString& RiderPath: RiderPaths)
 		{
-			IFileManager::Get().IterateDirectory(*ChannelDir, RiderDirs);
-		}
+			FRegexMatcher RiderPathMatcher(Pattern, RiderPath);
+			if (!RiderPathMatcher.FindNext()) continue;
 
-		for (const auto & RiderDir : RiderDirs.Folders)
-		{
-			const FString RiderExePath = FPaths::Combine(RiderDir, TEXT("bin\\rider64.exe"));
+			const FString RiderDir = RiderPathMatcher.GetCaptureGroup(1);
 			const FString RiderCppPluginPath = FPaths::Combine(RiderDir, TEXT("plugins\\rider-cpp"));
-			if (FPaths::FileExists(RiderExePath) && FPaths::DirectoryExists(RiderCppPluginPath))
+			if (FPaths::FileExists(RiderPath) && FPaths::DirectoryExists(RiderCppPluginPath))
 			{
 				FInstallInfo Info;
-				Info.Path = RiderExePath;
+				Info.Path = RiderPath;
 				Info.IsToolbox = true;
-				const FString BuildTxtPath = FPaths::Combine(RiderDir, TEXT("build.txt"));
-				if (FPaths::FileExists(BuildTxtPath))
+				const FString ProductInfoJsonPath = FPaths::Combine(RiderDir, TEXT("product-info.json"));
+				if (FPaths::FileExists(ProductInfoJsonPath))
 				{
-					FFileHelper::LoadFileToString(Info.Version, *BuildTxtPath);
+					FString JsonStr;
+					FFileHelper::LoadFileToString(JsonStr, *ProductInfoJsonPath);
+					TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonStr);
+					TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+					if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid())
+					{
+						JsonObject->TryGetStringField(TEXT("buildNumber"), Info.Version);
+					}
 				}
-				else
+				if(Info.Version.IsEmpty())
 				{
 					Info.Version = FPaths::GetBaseFilename(RiderDir);
 				}
-				RiderPaths.Add(Info);
+				RiderInstallInfos.Add(Info);
 			}
 		}
 
-		return RiderPaths;
+		return RiderInstallInfos;
 	}
 
 	static bool EnumerateRegistryKeys(HKEY Key, TArray<FString> &OutNames)
@@ -77,7 +101,7 @@ namespace FRiderPathLocator
 			TCHAR KeyName[256];
 			DWORD KeyNameLength = sizeof(KeyName) / sizeof(KeyName[0]);
 
-			const LONG Result = RegEnumKeyEx(Key, Index, KeyName, &KeyNameLength, NULL, NULL, NULL, NULL);
+			const LONG Result = RegEnumKeyEx(Key, Index, KeyName, &KeyNameLength, nullptr, nullptr, nullptr, nullptr);
 			if (Result == ERROR_NO_MORE_ITEMS)
 			{
 				break;
@@ -101,7 +125,7 @@ namespace FRiderPathLocator
 			wchar_t ValueName[256];
 			DWORD ValueNameLength = sizeof(ValueName) / sizeof(ValueName[0]);
 
-			const LONG Result = RegEnumValue(Key, Index, ValueName, &ValueNameLength, NULL, NULL, NULL, NULL);
+			const LONG Result = RegEnumValue(Key, Index, ValueName, &ValueNameLength, nullptr, nullptr, nullptr, nullptr);
 			if (Result == ERROR_NO_MORE_ITEMS)
 			{
 				break;
@@ -122,7 +146,7 @@ namespace FRiderPathLocator
 	{
 		WCHAR Buffer[512];
 		DWORD BufferSize = sizeof(Buffer);
-		const ULONG Result = RegQueryValueExW(Key, *ValueName, 0, NULL, (LPBYTE)Buffer, &BufferSize);
+		const ULONG Result = RegQueryValueExW(Key, *ValueName, nullptr, nullptr, reinterpret_cast<LPBYTE>(Buffer), &BufferSize);
 		if (Result == ERROR_SUCCESS)
 		{
 			Value = Buffer;
@@ -140,7 +164,7 @@ namespace FRiderPathLocator
 			TArray<FString> Keys;
 			if (EnumerateRegistryKeys(Key, Keys))
 			{
-				for (const auto& key : Keys)
+				for (const FString& key : Keys)
 				{
 					if (!key.Contains(TEXT("Rider"))) continue;
 
@@ -156,8 +180,9 @@ namespace FRiderPathLocator
 						if (Value != TEXT("InstallLocation")) continue;
 						FString InstallLocation;
 						if (GetStringRegKey(SubKey, Value, InstallLocation) != ERROR_SUCCESS) continue;
-						FString ExePath = FPaths::Combine(InstallLocation, TEXT("bin\\rider64.exe"));
-						if (FPaths::FileExists(ExePath))
+						const FString ExePath = FPaths::Combine(InstallLocation, TEXT("bin\\rider64.exe"));
+						const FString RiderCppPluginPath = FPaths::Combine(InstallLocation, TEXT("plugins\\rider-cpp"));
+						if (FPaths::FileExists(ExePath) && FPaths::DirectoryExists(RiderCppPluginPath))
 						{
 							FInstallInfo Info;
 							Info.IsToolbox = false;
@@ -177,12 +202,10 @@ namespace FRiderPathLocator
 	TArray<FInstallInfo> CollectAllPaths()
 	{
 		TArray<FInstallInfo> InstallInfos;
-		InstallInfos.Append(CollectPathsFromToolbox(TEXT("Rider")));
-		InstallInfos.Append(CollectPathsFromToolbox(TEXT("RiderCpp")));
+		InstallInfos.Append(CollectPathsFromToolbox());
 		InstallInfos.Append(CollectPathsFromRegistry(TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
 		InstallInfos.Append(CollectPathsFromRegistry(TEXT("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
 		return InstallInfos;
 	}
 }
 
-#include "Windows/HideWindowsPlatformTypes.h"

@@ -1,20 +1,19 @@
-// Copyright 1998-2018 Epic Games, Inc. All Rights Reserved.
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "RiderSourceCodeAccessor.h"
 
 #include "RiderPathLocator.h"
 
-#include "ISourceCodeAccessModule.h"
 #include "Modules/ModuleManager.h"
+#include "Misc/App.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Misc/ScopeLock.h"
+#include "Misc/UProjectInfo.h"
 #include "HAL/PlatformTime.h"
-
-#if PLATFORM_WINDOWS
-#include "Windows/AllowWindowsPlatformTypes.h"
-#endif
-#include "IHotReload.h"
 #include "DesktopPlatformModule.h"
+#include "Interfaces/IProjectManager.h"
+#include "ProjectDescriptor.h"
 
 #define LOCTEXT_NAMESPACE "RiderSourceCodeAccessor"
 
@@ -52,14 +51,6 @@ TOptional<FString> ResolvePathToFile(const FString& FullPath)
 } 
 }
 
-
-/** save all open documents in visual studio, when recompiling */
-static void OnModuleCompileStarted(bool bIsAsyncCompile)
-{
-	ISourceCodeAccessModule& SourceCodeAccessModule = FModuleManager::LoadModuleChecked<ISourceCodeAccessModule>("SourceCodeAccess");
-	SourceCodeAccessModule.GetAccessor().SaveAllOpenDocuments();
-}
-
 void FRiderSourceCodeAccessor::RefreshAvailability()
 {
 	// If we have an executable path, we certainly have it installed!
@@ -79,8 +70,7 @@ bool FRiderSourceCodeAccessor::CanAccessSourceCode() const
 
 bool FRiderSourceCodeAccessor::DoesSolutionExist() const
 {
-	FString SolutionPath;
-	return FDesktopPlatformModule::Get()->GetSolutionPath(SolutionPath);
+	return !GetSolutionPath().IsEmpty();
 }
 
 FText FRiderSourceCodeAccessor::GetDescriptionText() const
@@ -100,16 +90,17 @@ FText FRiderSourceCodeAccessor::GetNameText() const
 
 bool FRiderSourceCodeAccessor::OpenFileAtLine(const FString& FullPath, int32 LineNumber, int32)
 {
+	// UE_DEBUG_BREAK();
 	if (!bHasRiderInstalled) return false;
-	FString SolutionPath;
-	if (!FDesktopPlatformModule::Get()->GetSolutionPath(SolutionPath)) return false;
+	FString SolutionPath = GetSolutionPath();
+	if (SolutionPath.IsEmpty()) return false;
 	if (FPaths::IsRelative(SolutionPath))
 		SolutionPath = FPaths::ConvertRelativePathToFull(SolutionPath);
 
 	const TOptional<FString> OptionalPath = ResolvePathToFile(FullPath);
 	if(!OptionalPath.IsSet()) return false;
+	
 	const FString Path = OptionalPath.GetValue();
-
 	const FString Params = FString::Printf(TEXT("\"%s\" --line %d \"%s\""), *SolutionPath, LineNumber, *Path);
 
 	FProcHandle Proc = FPlatformProcess::CreateProc(*ExecutablePath, *Params, true, true, false, nullptr, 0, nullptr, nullptr);
@@ -125,17 +116,17 @@ bool FRiderSourceCodeAccessor::OpenFileAtLine(const FString& FullPath, int32 Lin
 
 bool FRiderSourceCodeAccessor::OpenSolution()
 {
+	// UE_DEBUG_BREAK();
 	if (!bHasRiderInstalled) return false;
 
-	FString SolutionPath;
-	if (FDesktopPlatformModule::Get()->GetSolutionPath(SolutionPath))
-	{
-		const FString FullPath = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*SolutionPath);
-		FPlatformProcess::CreateProc(*ExecutablePath, *FullPath, true, true, false, nullptr, 0, nullptr, nullptr);
-		return true;
-	}
+	const FString SolutionPath = GetSolutionPath();
+	if (SolutionPath.IsEmpty()) return false;
+	
+	const FString FullPath = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*SolutionPath);
+	const FString Params = FString::Printf(TEXT("\"%s\""), *FullPath);
+	FPlatformProcess::CreateProc(*ExecutablePath, *Params, true, true, false, nullptr, 0, nullptr, nullptr);
+	return true;
 
-	return false;
 }
 
 bool FRiderSourceCodeAccessor::OpenSolutionAtPath(const FString& InSolutionPath)
@@ -147,7 +138,8 @@ bool FRiderSourceCodeAccessor::OpenSolutionAtPath(const FString& InSolutionPath)
 	{
 		CorrectSolutionPath += ".sln";
 	}
-	FProcHandle Proc = FPlatformProcess::CreateProc(*ExecutablePath, *CorrectSolutionPath, true, true, false, nullptr, 0, nullptr, nullptr);
+	const FString Params = FString::Printf(TEXT("\"%s\""), *CorrectSolutionPath);
+	FProcHandle Proc = FPlatformProcess::CreateProc(*ExecutablePath, *Params, true, true, false, nullptr, 0, nullptr, nullptr);
 	if (!Proc.IsValid())
 	{
 		UE_LOG(LogRiderAccessor, Warning, TEXT("Opening the project file (%s) failed."), *CorrectSolutionPath);
@@ -159,9 +151,11 @@ bool FRiderSourceCodeAccessor::OpenSolutionAtPath(const FString& InSolutionPath)
 
 bool FRiderSourceCodeAccessor::OpenSourceFiles(const TArray<FString>& AbsoluteSourcePaths)
 {
+	// UE_DEBUG_BREAK();
 	if (!bHasRiderInstalled) return false;
-	FString SolutionPath;
-	if (!FDesktopPlatformModule::Get()->GetSolutionPath(SolutionPath)) return false;
+	FString SolutionPath = GetSolutionPath();
+	if (SolutionPath.IsEmpty()) return false;
+	
 	if (FPaths::IsRelative(SolutionPath))
 		SolutionPath = FPaths::ConvertRelativePathToFull(SolutionPath);
 
@@ -174,6 +168,8 @@ bool FRiderSourceCodeAccessor::OpenSourceFiles(const TArray<FString>& AbsoluteSo
 	}
 
 	const FString Params = FString::Printf(TEXT("\"%s\" %s"), *SolutionPath, *FilePaths);
+
+	
 
 	FProcHandle Proc = FPlatformProcess::CreateProc(*ExecutablePath, *Params, true, true, false, nullptr, 0, nullptr, nullptr);
 	if (!Proc.IsValid())
@@ -190,17 +186,66 @@ bool FRiderSourceCodeAccessor::SaveAllOpenDocuments() const
 	return false;
 }
 
-void FRiderSourceCodeAccessor::Startup(const FRiderPathLocator::FInstallInfo & Info)
-{
+void FRiderSourceCodeAccessor::Startup(const FRiderPathLocator::FInstallInfo& Info, ACCESS_TYPE Type)
+{	
 	ExecutablePath = Info.Path;
 	const FString IsToolboxText = Info.IsToolbox ? TEXT("(toolbox)") : TEXT("(installed)");
-	RiderName = *FString::Format(TEXT("Rider {0} {1}"), { Info.Version, IsToolboxText });
-#if WITH_EDITOR
-	// Setup compilation for saving all VS documents upon compilation start
-	BlockEditingInRiderDocumentsDelegateHandle = IHotReloadModule::Get().OnModuleCompilerStarted().AddStatic(&OnModuleCompileStarted);
-#endif
+	if(Type == ACCESS_TYPE::DIRECT)
+	{
+		RiderName = *FString::Format(TEXT("Rider {0} {1}"), { Info.Version, IsToolboxText });
+	}
+	else
+	{
+		RiderName = TEXT("Rider");
+	}
+	
 
 	RefreshAvailability();
+}
+
+
+FString FRiderSourceCodeAccessor::GetSolutionPath() const
+{
+	FScopeLock Lock(&CachedSolutionPathCriticalSection);
+
+	if(IsInGameThread())
+	{
+		if (CachedSolutionPathOverride.Len() > 0)
+		{
+			CachedSolutionPath = CachedSolutionPathOverride + TEXT(".sln");
+		}
+		else
+		{
+			CachedSolutionPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+
+			if (!FUProjectDictionary(FPaths::RootDir()).IsForeignProject(CachedSolutionPath))
+			{
+				FString MasterProjectName;
+				if (!FFileHelper::LoadFileToString(MasterProjectName, *(FPaths::EngineIntermediateDir() / TEXT("ProjectFiles/MasterProjectName.txt"))))
+				{
+					MasterProjectName = "UE4";
+				}
+				CachedSolutionPath = FPaths::Combine(FPaths::RootDir(), MasterProjectName + TEXT(".sln"));
+			}
+			else
+			{
+				const FProjectDescriptor* CurrentProject = IProjectManager::Get().GetCurrentProject();
+
+				if (CurrentProject == nullptr || CurrentProject->Modules.Num() == 0)
+				{
+					CachedSolutionPath = TEXT("");
+				}
+				else
+				{
+					const FString BaseName = FApp::HasProjectName() ? FApp::GetProjectName() : FPaths::GetBaseFilename(CachedSolutionPath);
+					CachedSolutionPath = FPaths::Combine(CachedSolutionPath, BaseName + TEXT(".sln"));
+				}
+			}
+		}
+	}
+
+	// This must be an absolute path as VS always uses absolute paths
+	return CachedSolutionPath;
 }
 
 #undef LOCTEXT_NAMESPACE

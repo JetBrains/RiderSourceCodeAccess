@@ -1,8 +1,7 @@
-// Copyright 1998-2018 Epic Games, Inc. All Rights Reserved.
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "ISourceCodeAccessor.h"
 
 namespace FRiderPathLocator
@@ -13,7 +12,12 @@ namespace FRiderPathLocator
 class FRiderSourceCodeAccessor : public ISourceCodeAccessor
 {
 public:
-	void Startup(const FRiderPathLocator::FInstallInfo & Info);
+	enum class ACCESS_TYPE
+	{
+		DIRECT,
+		AGGREGATE
+	};
+	void Startup(const FRiderPathLocator::FInstallInfo & Info, ACCESS_TYPE Type = ACCESS_TYPE::DIRECT);
 
 	/** ISourceCodeAccessor implementation */
 	virtual void RefreshAvailability() override;
@@ -31,18 +35,22 @@ public:
 	virtual void Tick(const float) override {}
 private:
 
+	FString GetSolutionPath() const;
+
 	FName RiderName;
 
-	/**
-	 * Is Rider installed on this system?
-	 */
+	/** Is Rider installed on this system? */
 	bool bHasRiderInstalled = false;
-	/**
-	 * The path to the Rider executable.
-	 */
+	
+	/** The path to the Rider executable. */
 	FString ExecutablePath;
 
-#if WITH_EDITOR
-	FDelegateHandle BlockEditingInRiderDocumentsDelegateHandle;
-#endif
+	/** Critical section for updating SolutionPath */
+	mutable FCriticalSection CachedSolutionPathCriticalSection;
+
+	/** String storing the solution path obtained from the module manager to avoid having to use it on a thread */
+	mutable FString CachedSolutionPath = {};
+
+	/** Override for the cached solution path */
+	mutable FString CachedSolutionPathOverride = {};
 };
