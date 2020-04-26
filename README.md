@@ -3,6 +3,7 @@ How to add RiderSourceCodeAccess to your project
 ## How to add to Game project
 1. Unzip `RiderSourceCodeAccess.zip` to `RiderSourceCodeAccess` folder;
 2. Copy `RiderSourceCodeAccess` folder to `{UnrealProjectRoot}/Plugins/Developer`;
+  a. If `{UnrealProjectRoot}/Plugins/Developer` does not exist, create it;
 3. Re-generate solution files - uproject file > context menu > Generate Visual Studio project files;
 4. Build UE project using Rider or Visual Studio;
 5. Start Unreal Editor;
@@ -13,6 +14,7 @@ How to add RiderSourceCodeAccess to your project
 ### Project is built from source code   
 1. Unzip `RiderSourceCodeAccess.zip` to `RiderSourceCodeAccess` folder;
 2. Copy `RiderSourceCodeAccess` folder to `{UnrealEngineRoot}/Engine/Plugins/Developer`;
+  a. If `{UnrealProjectRoot}/Plugins/Developer` does not exist, create it;
 3. Re-generate solution files - uproject file > context menu > Generate Visual Studio project files;
 4. Build UE project using Rider or Visual Studio;
 5. Start Unreal Editor;
@@ -22,6 +24,7 @@ How to add RiderSourceCodeAccess to your project
 ### Project is downloaded from Epic Games Store
 1. Unzip `RiderSourceCodeAccess.zip` to `RiderSourceCodeAccess` folder;
 2. Copy `RiderSourceCodeAccess` folder to `{UnrealProjectRoot}/Plugins/Developer`;
+  a. If `{UnrealProjectRoot}/Plugins/Developer` does not exist, create it;
 3. Re-generate solution files - uproject file > context menu > Generate Visual Studio project files;
 4. Build UE project using Rider or Visual Studio;
 5. Move `RiderSourceCodeAccess` folder from `{UnrealProjectRoot}/Plugins/Developer` to `{UnrealEngineRoot}/Engine/Plugins/Developer`;
