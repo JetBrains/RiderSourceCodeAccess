@@ -11,7 +11,7 @@ How to add RiderSourceCodeAccess to your project
 7. Edit > Editor Preferences ... > General > Source Code > Source Code Editor;
 8. Select Rider from drop down list. NB: only Rider with C++ plugins will be available from drop down list.
 
-## Hot to add to Engine project
+## How to add to Engine project
 ### Project is built from source code   
 1. Go to ["Releases" page](https://github.com/JetBrains/RiderSourceCodeAccess/releases) and download version of plugin for your version of Unreal Engine; 
 2. Unzip `RiderSourceCodeAccess.zip` to `RiderSourceCodeAccess` folder;
