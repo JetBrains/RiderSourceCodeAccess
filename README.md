@@ -24,7 +24,7 @@ RiderSourceCodeAccess is a plugin for Unreal Engine, available through [Marketpl
 1. Go to ["Releases" page](https://github.com/JetBrains/RiderSourceCodeAccess/releases) and download version of plugin for your version of Unreal Engine; 
 2. Unzip `RiderSourceCodeAccess.zip` to `RiderSourceCodeAccess` folder;
 3. Copy `RiderSourceCodeAccess` folder to `{UnrealEngineRoot}/Engine/Plugins/Developer`;
-  a. If `{UnrealProjectRoot}/Plugins/Developer` does not exist, create it;
+  a. If `{UnrealEngineRoot}/Engine/Plugins/Developer` does not exist, create it;
 4. Re-generate solution files - uproject file > context menu > Generate Visual Studio project files;
 5. Build UE project using Rider or Visual Studio;
 6. Start Unreal Editor;
