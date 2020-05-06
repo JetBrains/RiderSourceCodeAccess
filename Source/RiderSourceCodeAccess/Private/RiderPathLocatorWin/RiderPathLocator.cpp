@@ -18,11 +18,11 @@
 
 namespace FRiderPathLocator
 {
-	static TArray<FInstallInfo> CollectPathsFromToolbox()
+	static TArray<FInstallInfo> CollectPathsFromToolbox(const Windows::HKEY RootKey)
 	{
 		FString ToolboxBinPath;
 
-		if (!FWindowsPlatformMisc::QueryRegKey(HKEY_CURRENT_USER, TEXT("Software\\JetBrains\\Toolbox\\"), TEXT(""), ToolboxBinPath)) return {};
+		if (!FWindowsPlatformMisc::QueryRegKey(RootKey, TEXT("Software\\JetBrains\\Toolbox\\"), TEXT(""), ToolboxBinPath)) return {};
 
 		FPaths::NormalizeDirectoryName(ToolboxBinPath);
 		const FString PatternString(TEXT("(.*)/bin"));
@@ -154,11 +154,11 @@ namespace FRiderPathLocator
 		return Result;
 	}
 
-	static TArray<FInstallInfo> CollectPathsFromRegistry(const FString& RegistryKey)
+	static TArray<FInstallInfo> CollectPathsFromRegistry( const Windows::HKEY RootKey, const FString& RegistryKey)
 	{
 		TArray<FInstallInfo> InstallInfos;
 		HKEY Key;
-		const LONG Result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, *RegistryKey, 0, KEY_READ, &Key);
+		const LONG Result = RegOpenKeyEx(RootKey, *RegistryKey, 0, KEY_READ, &Key);
 		if (Result == ERROR_SUCCESS)
 		{
 			TArray<FString> Keys;
@@ -199,12 +199,15 @@ namespace FRiderPathLocator
 		return InstallInfos;
 	}
 
-	TArray<FInstallInfo> CollectAllPaths()
+	TSet<FInstallInfo> CollectAllPaths()
 	{
-		TArray<FInstallInfo> InstallInfos;
-		InstallInfos.Append(CollectPathsFromToolbox());
-		InstallInfos.Append(CollectPathsFromRegistry(TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
-		InstallInfos.Append(CollectPathsFromRegistry(TEXT("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
+		TSet<FInstallInfo> InstallInfos;
+		InstallInfos.Append(CollectPathsFromToolbox(HKEY_CURRENT_USER));
+		InstallInfos.Append(CollectPathsFromToolbox(HKEY_LOCAL_MACHINE));
+		InstallInfos.Append(CollectPathsFromRegistry(HKEY_CURRENT_USER, TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
+		InstallInfos.Append(CollectPathsFromRegistry(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
+		InstallInfos.Append(CollectPathsFromRegistry(HKEY_CURRENT_USER, TEXT("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
+		InstallInfos.Append(CollectPathsFromRegistry(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
 		return InstallInfos;
 	}
 }
