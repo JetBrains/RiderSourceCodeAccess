@@ -16,6 +16,17 @@ namespace FRiderPathLocator
 		{
 			return Version < rhs.Version;
 		}
+
+		bool operator==(const FInstallInfo& rhs) const
+		{
+			return !(*this < rhs) && !(rhs < *this); 
+		}
 	};
-	TArray<FInstallInfo> CollectAllPaths();
+
+	TSet<FInstallInfo> CollectAllPaths();
+}
+		
+FORCEINLINE uint32 GetTypeHash(const FRiderPathLocator::FInstallInfo& InstallInfo)
+{
+	return GetTypeHash(InstallInfo.Path);
 }
