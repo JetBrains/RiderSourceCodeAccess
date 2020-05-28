@@ -33,9 +33,12 @@ public:
 	virtual bool AddSourceFiles(const TArray<FString>& AbsoluteSourcePaths, const TArray<FString>& AvailableModules) override;
 	virtual bool SaveAllOpenDocuments() const override;
 	virtual void Tick(const float) override {}
-private:
+private:	
+	void CachePathToSolution() const;
+	bool HandleOpeningRider(TFunction<bool()> Callback) const;
 
-	FString GetSolutionPath() const;
+	bool TryGenerateSolutionFile() const;
+	TOptional<FString> GetSolutionPath() const;
 
 	FName RiderName;
 
