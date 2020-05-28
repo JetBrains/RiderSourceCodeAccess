@@ -22,7 +22,7 @@ void FRiderSourceCodeAccessModule::ShutdownModule()
 
 void FRiderSourceCodeAccessModule::StartupModule()
 {
-	TArray<FRiderPathLocator::FInstallInfo> InstallInfos = FRiderPathLocator::CollectAllPaths();
+	TArray<FRiderPathLocator::FInstallInfo> InstallInfos = FRiderPathLocator::CollectAllPaths().Array();
 	InstallInfos.Sort();
 	for (const FRiderPathLocator::FInstallInfo & InstallInfo : InstallInfos)
 	{

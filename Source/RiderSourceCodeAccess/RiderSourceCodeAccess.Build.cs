@@ -11,6 +11,8 @@ namespace UnrealBuildTool.Rules
                 new []
                 {
                     "Core",
+                    "UnrealEd",
+                    "GameProjectGeneration",
                     "SourceCodeAccess",
                     "DesktopPlatform",
 					"Projects",
