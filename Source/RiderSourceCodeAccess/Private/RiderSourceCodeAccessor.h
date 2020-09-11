@@ -4,10 +4,7 @@
 
 #include "ISourceCodeAccessor.h"
 
-namespace FRiderPathLocator
-{
-	struct FInstallInfo;
-}
+struct FInstallInfo;
 
 class FRiderSourceCodeAccessor : public ISourceCodeAccessor
 {
@@ -17,7 +14,7 @@ public:
 		DIRECT,
 		AGGREGATE
 	};
-	void Startup(const FRiderPathLocator::FInstallInfo & Info, ACCESS_TYPE Type = ACCESS_TYPE::DIRECT);
+	void Startup(const FInstallInfo & Info, ACCESS_TYPE Type = ACCESS_TYPE::DIRECT);
 
 	/** ISourceCodeAccessor implementation */
 	virtual void RefreshAvailability() override;

@@ -2,7 +2,7 @@
 
 #include "RiderSourceCodeAccessor.h"
 
-#include "RiderPathLocator.h"
+#include "RiderPathLocator/RiderPathLocator.h"
 
 #include "Modules/ModuleManager.h"
 #include "Misc/App.h"
@@ -222,7 +222,7 @@ bool FRiderSourceCodeAccessor::SaveAllOpenDocuments() const
 	return false;
 }
 
-void FRiderSourceCodeAccessor::Startup(const FRiderPathLocator::FInstallInfo& Info, ACCESS_TYPE Type)
+void FRiderSourceCodeAccessor::Startup(const FInstallInfo& Info, ACCESS_TYPE Type)
 {	
 	ExecutablePath = Info.Path;
 	const FString IsToolboxText = Info.IsToolbox ? TEXT("(toolbox)") : TEXT("(installed)");

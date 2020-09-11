@@ -19,11 +19,6 @@ namespace UnrealBuildTool.Rules
 					"Json"
                 }
             );
-
-            if (Target.Platform == UnrealTargetPlatform.Win64)
-            {
-                PrivateIncludePaths.Add("RiderSourceCodeAccess/Private/RiderPathLocatorWin");
-            }
 		}
 	}
 }

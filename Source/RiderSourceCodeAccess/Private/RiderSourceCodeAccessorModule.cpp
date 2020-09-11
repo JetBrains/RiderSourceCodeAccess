@@ -2,7 +2,7 @@
 
 #include "RiderSourceCodeAccessorModule.h"
 
-#include "RiderPathLocator.h"
+#include "RiderPathLocator/RiderPathLocator.h"
 
 #include "Modules/ModuleManager.h"
 #include "Features/IModularFeatures.h"
@@ -22,9 +22,9 @@ void FRiderSourceCodeAccessModule::ShutdownModule()
 
 void FRiderSourceCodeAccessModule::StartupModule()
 {
-	TArray<FRiderPathLocator::FInstallInfo> InstallInfos = FRiderPathLocator::CollectAllPaths().Array();
+	TArray<FInstallInfo> InstallInfos = FRiderPathLocator::CollectAllPaths().Array();
 	InstallInfos.Sort();
-	for (const FRiderPathLocator::FInstallInfo & InstallInfo : InstallInfos)
+	for (const FInstallInfo & InstallInfo : InstallInfos)
 	{
 		TSharedRef<FRiderSourceCodeAccessor> RiderSourceCodeAccessor = MakeShareable(new FRiderSourceCodeAccessor());
 		RiderSourceCodeAccessor->Startup(InstallInfo);
