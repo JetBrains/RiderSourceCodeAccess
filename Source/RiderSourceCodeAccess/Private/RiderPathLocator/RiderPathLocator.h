@@ -23,13 +23,11 @@ struct FInstallInfo
 class FRiderPathLocator
 {
 public:
-	static TArray<FInstallInfo> GetInstallInfosFromToolbox(const FString& ToolboxPath, const FString& Pattern);
-	static TOptional<FInstallInfo> GetInstallInfoFromRiderPath(FString Path, bool bIsToolbox);
-	
 	// Platform specific implementation
+	static TOptional<FInstallInfo> GetInstallInfoFromRiderPath(const FString& Path, bool bIsToolbox);
 	static TSet<FInstallInfo> CollectAllPaths();
-private:	
-
+private:
+	static TArray<FInstallInfo> GetInstallInfosFromToolbox(const FString& ToolboxPath, const FString& Pattern);
 	static TArray<FInstallInfo> GetInstallInfos(const FString& ToolboxRiderRootPath, const FString& Pattern, bool IsToolbox);
 };
 		

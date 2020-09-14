@@ -1,16 +1,44 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 #if PLATFORM_MAC
-
 #include "RiderPathLocator/RiderPathLocator.h"
 
 #include "HAL/FileManager.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+#include "Serialization/JsonSerializer.h"
+
 #include "Runtime/Launch/Resources/Version.h"
+
+TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FString& PathToRiderApp, bool bIsToolbox)
+{
+	if(!FPaths::DirectoryExists(PathToRiderApp)) return {};
+
+	const FString RiderCppPluginPath = FPaths::Combine(PathToRiderApp, TEXT("Contents"), TEXT("plugins"), TEXT("rider-cpp"));
+	if (!FPaths::DirectoryExists(RiderCppPluginPath)) return {};
+	
+	FInstallInfo Info;
+	Info.Path = PathToRiderApp;
+	Info.IsToolbox = bIsToolbox;
+	const FString ProductInfoJsonPath = FPaths::Combine(PathToRiderApp, TEXT("Contents"), TEXT("Resources"), TEXT("product-info.json"));
+	if (FPaths::FileExists(ProductInfoJsonPath))
+	{
+		FString JsonStr;
+		FFileHelper::LoadFileToString(JsonStr, *ProductInfoJsonPath);
+		TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonStr);
+		TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+		if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid())
+		{
+			JsonObject->TryGetStringField(TEXT("buildNumber"), Info.Version);
+		}
+	}
+	return Info;
+}
 
 static TArray<FInstallInfo> GetManuallyInstalledRiders()
 {
 	TArray<FInstallInfo> Result;
 	TArray<FString> RiderPaths;
-	IFileManager::Get().FindFilesRecursive(RiderPaths, TEXT("/Applications"), TEXT("Rider*.app"), true, false);
+	IFileManager::Get().FindFilesRecursive(RiderPaths, TEXT("/Applications"), TEXT("Rider*.app"), false, true);
 	for(const FString& RiderPath: RiderPaths)
 	{
 		TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(RiderPath, false);
@@ -20,7 +48,7 @@ static TArray<FInstallInfo> GetManuallyInstalledRiders()
 	return Result;
 }
 
-static TArray<FInstallInfo> GetRidersFromToolbox()
+static FString GetToolboxPath()
 {
 	TArray<FInstallInfo> Result;
 #if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 20
@@ -31,16 +59,15 @@ static TArray<FInstallInfo> GetRidersFromToolbox()
 	const FString FHomePath = FPlatformMisc::GetEnvironmentVariable(TEXT("HOME"));
 #endif
 	FString LocalAppData = FPaths::Combine(FHomePath, TEXT("Library"), TEXT("Application Support"));
-	FString ToolboxPath = FPaths::Combine(LocalAppData, TEXT("JetBrains"), TEXT("Toolbox"));
-		
-	return FRiderPathLocator::GetInstallInfosFromToolbox(ToolboxPath, "Rider*.app");		
+
+	return FPaths::Combine(LocalAppData, TEXT("JetBrains"), TEXT("Toolbox"));
 }
 	
 TSet<FInstallInfo> FRiderPathLocator::CollectAllPaths()
 {
 	TSet<FInstallInfo> InstallInfos;
 	InstallInfos.Append(GetManuallyInstalledRiders());
-	InstallInfos.Append(GetRidersFromToolbox());
+	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(), "Rider*.app"));
 	return InstallInfos;
 }
 #endif

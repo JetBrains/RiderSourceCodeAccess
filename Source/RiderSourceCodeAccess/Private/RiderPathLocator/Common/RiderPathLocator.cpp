@@ -1,9 +1,9 @@
 ﻿#include "RiderPathLocator/RiderPathLocator.h"
 
+#include "Dom/JsonObject.h"
 #include "Internationalization/Regex.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
-#include "Dom/JsonObject.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 
@@ -36,46 +36,11 @@ TArray<FInstallInfo> FRiderPathLocator::GetInstallInfosFromToolbox(const FString
 	return GetInstallInfos(ToolboxRiderRootPath, Pattern, true);
 }
 
-TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(FString Path, bool bIsToolbox)
-{
-	if(!FPaths::FileExists(Path)) return {};
-	
-	const FString PatternString(TEXT("(.*)/bin"));
-	const FRegexPattern Pattern(PatternString);
-	FRegexMatcher RiderPathMatcher(Pattern, Path);
-	if (!RiderPathMatcher.FindNext()) return {};
-
-	const FString RiderDir = RiderPathMatcher.GetCaptureGroup(1);
-	const FString RiderCppPluginPath = FPaths::Combine(RiderDir, TEXT("plugins"), TEXT("rider-cpp"));
-	if (!FPaths::DirectoryExists(RiderCppPluginPath)) return {};
-	
-	FInstallInfo Info;
-	Info.Path = Path;
-	Info.IsToolbox = bIsToolbox;
-	const FString ProductInfoJsonPath = FPaths::Combine(RiderDir, TEXT("product-info.json"));
-	if (FPaths::FileExists(ProductInfoJsonPath))
-	{
-		FString JsonStr;
-		FFileHelper::LoadFileToString(JsonStr, *ProductInfoJsonPath);
-		TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonStr);
-		TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
-		if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid())
-		{
-			JsonObject->TryGetStringField(TEXT("buildNumber"), Info.Version);
-		}
-	}
-	if(Info.Version.IsEmpty())
-	{
-		Info.Version = FPaths::GetBaseFilename(RiderDir);
-	}
-	return Info;
-}
-
 TArray<FInstallInfo> FRiderPathLocator::GetInstallInfos(const FString& ToolboxRiderRootPath, const FString& Pattern, bool IsToolbox)
 {
 	TArray<FInstallInfo> RiderInstallInfos;
 	TArray<FString> RiderPaths;
-	IFileManager::Get().FindFilesRecursive(RiderPaths, *ToolboxRiderRootPath, *Pattern, true, false);
+	IFileManager::Get().FindFilesRecursive(RiderPaths, *ToolboxRiderRootPath, *Pattern, true, true);
 	for(const FString& RiderPath: RiderPaths)
 	{
 		TOptional<FInstallInfo> InstallInfo = GetInstallInfoFromRiderPath(RiderPath, IsToolbox);

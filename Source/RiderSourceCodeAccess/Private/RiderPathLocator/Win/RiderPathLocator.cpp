@@ -1,17 +1,17 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
 #if PLATFORM_WINDOWS
-
 #include "RiderPathLocator/RiderPathLocator.h"
 
 #include "Internationalization/Regex.h"
+#include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Serialization/JsonSerializer.h"
 
 #include "Windows/WindowsPlatformMisc.h"
 #include "Windows/AllowWindowsPlatformTypes.h"
 #include <winreg.h>
 #include "Windows/HideWindowsPlatformTypes.h"
 
-static TArray<FInstallInfo> CollectPathsFromToolbox(const Windows::HKEY RootKey)
+static FString GetToolboxPath(const Windows::HKEY RootKey)
 {
 	FString ToolboxBinPath;
 
@@ -23,8 +23,7 @@ static TArray<FInstallInfo> CollectPathsFromToolbox(const Windows::HKEY RootKey)
 	FRegexMatcher ToolboxPathMatcher(Pattern, ToolboxBinPath);
 	if (!ToolboxPathMatcher.FindNext()) return {};
 
-	const FString ToolboxPath = ToolboxPathMatcher.GetCaptureGroup(1);
-	return FRiderPathLocator::GetInstallInfosFromToolbox(ToolboxPath, "rider64.exe");
+	return ToolboxPathMatcher.GetCaptureGroup(1);
 }
 
 static bool EnumerateRegistryKeys(HKEY Key, TArray<FString> &OutNames)
@@ -132,11 +131,46 @@ static TArray<FInstallInfo> CollectPathsFromRegistry( const Windows::HKEY RootKe
 	return InstallInfos;
 }
 
+TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FString& Path, bool bIsToolbox)
+{
+	if(!FPaths::FileExists(Path)) return {};
+	
+	const FString PatternString(TEXT("(.*)/bin"));
+	const FRegexPattern Pattern(PatternString);
+	FRegexMatcher RiderPathMatcher(Pattern, Path);
+	if (!RiderPathMatcher.FindNext()) return {};
+
+	const FString RiderDir = RiderPathMatcher.GetCaptureGroup(1);
+	const FString RiderCppPluginPath = FPaths::Combine(RiderDir, TEXT("plugins"), TEXT("rider-cpp"));
+	if (!FPaths::DirectoryExists(RiderCppPluginPath)) return {};
+	
+	FInstallInfo Info;
+	Info.Path = Path;
+	Info.IsToolbox = bIsToolbox;
+	const FString ProductInfoJsonPath = FPaths::Combine(RiderDir, TEXT("product-info.json"));
+	if (FPaths::FileExists(ProductInfoJsonPath))
+	{
+		FString JsonStr;
+		FFileHelper::LoadFileToString(JsonStr, *ProductInfoJsonPath);
+		TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonStr);
+		TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+		if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid())
+		{
+			JsonObject->TryGetStringField(TEXT("buildNumber"), Info.Version);
+		}
+	}
+	if(Info.Version.IsEmpty())
+	{
+		Info.Version = FPaths::GetBaseFilename(RiderDir);
+	}
+	return Info;
+}
+
 TSet<FInstallInfo> FRiderPathLocator::CollectAllPaths()
 {
 	TSet<FInstallInfo> InstallInfos;
-	InstallInfos.Append(CollectPathsFromToolbox(HKEY_CURRENT_USER));
-	InstallInfos.Append(CollectPathsFromToolbox(HKEY_LOCAL_MACHINE));
+	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(HKEY_CURRENT_USER), "rider64.exe"));
+	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(HKEY_LOCAL_MACHINE), "rider64.exe"));
 	InstallInfos.Append(CollectPathsFromRegistry(HKEY_CURRENT_USER, TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
 	InstallInfos.Append(CollectPathsFromRegistry(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
 	InstallInfos.Append(CollectPathsFromRegistry(HKEY_CURRENT_USER, TEXT("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
