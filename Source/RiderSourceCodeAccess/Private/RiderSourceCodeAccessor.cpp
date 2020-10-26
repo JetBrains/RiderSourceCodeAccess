@@ -51,7 +51,7 @@ TOptional<FString> ResolvePathToFile(const FString& FullPath)
 		if (!FPaths::FileExists(Path)) return {};
 	}
 	return {Path};
-} 
+}
 }
 
 void FRiderSourceCodeAccessor::RefreshAvailability()
@@ -62,7 +62,10 @@ void FRiderSourceCodeAccessor::RefreshAvailability()
 
 bool FRiderSourceCodeAccessor::AddSourceFiles(const TArray<FString>& AbsoluteSourcePaths, const TArray<FString>& AvailableModules)
 {
-	// @todo.Rider Manually add to folders? Or just regenerate
+	// For uproject model, we're listening to changes of filesystem and will update project automatically
+	if(Model == EProjectModel::Uproject) return true;
+	
+	// For other cases, fall back to default one
 	return false;
 }
 
@@ -222,67 +225,98 @@ bool FRiderSourceCodeAccessor::SaveAllOpenDocuments() const
 	return false;
 }
 
-void FRiderSourceCodeAccessor::Startup(const FInstallInfo& Info, ACCESS_TYPE Type)
-{	
+void FRiderSourceCodeAccessor::Init(const FInstallInfo& Info, EProjectModel ProjectModel, EAccessType Type)
+{
+	Model = ProjectModel; 
 	ExecutablePath = Info.Path;
 	const FString IsToolboxText = Info.IsToolbox ? TEXT("(toolbox)") : TEXT("(installed)");
-	if(Type == ACCESS_TYPE::DIRECT)
+	FString UprojectSuffix = "";
+	if(ProjectModel == EProjectModel::Uproject)
 	{
-		RiderName = *FString::Format(TEXT("Rider {0} {1}"), { Info.Version, IsToolboxText });
+		UprojectSuffix += " Uproject";
+		if(Info.SupportUprojectState == FInstallInfo::ESupportUproject::Beta)
+			UprojectSuffix += " (experimental)";
+	}
+	FString NewName;
+	if(Type == EAccessType::Direct)
+	{
+		NewName = *FString::Format(TEXT("Rider {0} {1}{2}"), { Info.Version.ToString(), IsToolboxText, UprojectSuffix });
 	}
 	else
 	{
-		RiderName = TEXT("Rider");
+		NewName = *FString::Format(TEXT("Rider{0}"), { UprojectSuffix });
 	}
+
+	RiderName = *NewName;
 	
 	RefreshAvailability();
 }
 
 
-void FRiderSourceCodeAccessor::CachePathToSolution() const
+void FRiderSourceCodeAccessor::CachePathToUproject() const
 {
-	if(IsInGameThread())
+	CachedSolutionPath = FPaths::GetProjectFilePath();
+}
+
+void FRiderSourceCodeAccessor::CachePathToSln() const
+{
+	if (CachedSolutionPathOverride.Len() > 0)
 	{
-		if (CachedSolutionPathOverride.Len() > 0)
+		CachedSolutionPath = CachedSolutionPathOverride + TEXT(".sln");
+	}
+	else
+	{
+		CachedSolutionPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+
+		if (!FUProjectDictionary(FPaths::RootDir()).IsForeignProject(CachedSolutionPath))
 		{
-			CachedSolutionPath = CachedSolutionPathOverride + TEXT(".sln");
+			FString MasterProjectName;
+			if (!FFileHelper::LoadFileToString(MasterProjectName, *(FPaths::EngineIntermediateDir() / TEXT("ProjectFiles/MasterProjectName.txt"))))
+			{
+				MasterProjectName = "UE4";
+			}
+			CachedSolutionPath = FPaths::Combine(FPaths::RootDir(), MasterProjectName + TEXT(".sln"));
 		}
 		else
 		{
-			CachedSolutionPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+			const FProjectDescriptor* CurrentProject = IProjectManager::Get().GetCurrentProject();
 
-			if (!FUProjectDictionary(FPaths::RootDir()).IsForeignProject(CachedSolutionPath))
+			if (CurrentProject == nullptr || CurrentProject->Modules.Num() == 0)
 			{
-				FString MasterProjectName;
-				if (!FFileHelper::LoadFileToString(MasterProjectName, *(FPaths::EngineIntermediateDir() / TEXT("ProjectFiles/MasterProjectName.txt"))))
-				{
-					MasterProjectName = "UE4";
-				}
-				CachedSolutionPath = FPaths::Combine(FPaths::RootDir(), MasterProjectName + TEXT(".sln"));
+				CachedSolutionPath = TEXT("");
 			}
 			else
 			{
-				const FProjectDescriptor* CurrentProject = IProjectManager::Get().GetCurrentProject();
-
-				if (CurrentProject == nullptr || CurrentProject->Modules.Num() == 0)
-				{
-					CachedSolutionPath = TEXT("");
-				}
-				else
-				{
-					const FString BaseName = FApp::HasProjectName() ? FApp::GetProjectName() : FPaths::GetBaseFilename(CachedSolutionPath);
-					CachedSolutionPath = FPaths::Combine(CachedSolutionPath, BaseName + TEXT(".sln"));
-				}
+				const FString BaseName = FApp::HasProjectName() ? FApp::GetProjectName() : FPaths::GetBaseFilename(CachedSolutionPath);
+				CachedSolutionPath = FPaths::Combine(CachedSolutionPath, BaseName + TEXT(".sln"));
 			}
 		}
 	}
 }
 
-bool FRiderSourceCodeAccessor::TryGenerateSolutionFile() const
+void FRiderSourceCodeAccessor::CachePathToSolution() const
 {
-	const FText Message = LOCTEXT("RSCA_AskGenerateSolutionFile",
-	                                              "Project file is not available.\nGenerate project file?");
-	if(FMessageDialog::Open(EAppMsgType::YesNo, Message) == EAppReturnType::No) return false;
+	if(IsInGameThread())
+	{
+		if (Model == EProjectModel::Sln)
+		{
+			CachePathToSln();
+		}			
+		else if (Model == EProjectModel::Uproject)
+		{
+			CachePathToUproject();
+		}			
+	}
+}
+
+bool FRiderSourceCodeAccessor::TryGenerateSlnFile() const
+{
+#if WITH_EDITOR
+	const FText Message = LOCTEXT("RSCA_AskGenerateSolutionFile", "Project file is not available.\nGenerate project file?");
+	if (FMessageDialog::Open(EAppMsgType::YesNo, Message) == EAppReturnType::No)
+	{
+		return false;
+	}
 	
 	FText FailReason, FailLog;
 	if(!FGameProjectGenerationModule::Get().UpdateCodeProject(FailReason, FailLog))
@@ -291,6 +325,19 @@ bool FRiderSourceCodeAccessor::TryGenerateSolutionFile() const
 		return false;
 	}
 	return true;
+#else
+	return false;
+#endif
+}
+
+bool FRiderSourceCodeAccessor::TryGenerateSolutionFile() const
+{
+	if(Model == EProjectModel::Sln)
+		return TryGenerateSlnFile();
+	// {Game}.uproject should be always available, and Rider project model will be generated on opening/changing project related files 
+	if(Model == EProjectModel::Uproject)
+		return true;
+	return false;
 }
 
 TOptional<FString> FRiderSourceCodeAccessor::GetSolutionPath() const

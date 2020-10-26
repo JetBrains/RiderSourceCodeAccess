@@ -113,15 +113,9 @@ static TArray<FInstallInfo> CollectPathsFromRegistry( const Windows::HKEY RootKe
 					FString InstallLocation;
 					if (GetStringRegKey(SubKey, Value, InstallLocation) != ERROR_SUCCESS) continue;
 					const FString ExePath = FPaths::Combine(InstallLocation, TEXT("bin"), TEXT("rider64.exe"));
-					const FString RiderCppPluginPath = FPaths::Combine(InstallLocation, TEXT("plugins"), TEXT("rider-cpp"));
-					if (FPaths::FileExists(ExePath) && FPaths::DirectoryExists(RiderCppPluginPath))
-					{
-						FInstallInfo Info;
-						Info.IsToolbox = false;
-						Info.Path = ExePath;
-						GetStringRegKey(SubKey, TEXT("DisplayVersion"), Info.Version);
-						InstallInfos.Add(Info);
-					}
+					TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(ExePath, false);
+					if(InstallInfo.IsSet())
+						InstallInfos.Add(InstallInfo.GetValue());
 				}
 
 			}
@@ -150,16 +144,9 @@ TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FSt
 	const FString ProductInfoJsonPath = FPaths::Combine(RiderDir, TEXT("product-info.json"));
 	if (FPaths::FileExists(ProductInfoJsonPath))
 	{
-		FString JsonStr;
-		FFileHelper::LoadFileToString(JsonStr, *ProductInfoJsonPath);
-		TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonStr);
-		TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
-		if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid())
-		{
-			JsonObject->TryGetStringField(TEXT("buildNumber"), Info.Version);
-		}
+		ParseProductInfoJson(Info, ProductInfoJsonPath);
 	}
-	if(Info.Version.IsEmpty())
+	if(!Info.Version.IsInitialized())
 	{
 		Info.Version = FPaths::GetBaseFilename(RiderDir);
 	}

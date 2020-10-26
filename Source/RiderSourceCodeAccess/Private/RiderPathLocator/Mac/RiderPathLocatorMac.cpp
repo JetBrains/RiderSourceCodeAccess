@@ -17,19 +17,12 @@ TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FSt
 	if (!FPaths::DirectoryExists(RiderCppPluginPath)) return {};
 	
 	FInstallInfo Info;
-	Info.Path = PathToRiderApp;
+	Info.Path = FPaths::Combine(PathToRiderApp, TEXT("Contents"), TEXT("MacOS"), TEXT("rider"));
 	Info.IsToolbox = bIsToolbox;
 	const FString ProductInfoJsonPath = FPaths::Combine(PathToRiderApp, TEXT("Contents"), TEXT("Resources"), TEXT("product-info.json"));
 	if (FPaths::FileExists(ProductInfoJsonPath))
 	{
-		FString JsonStr;
-		FFileHelper::LoadFileToString(JsonStr, *ProductInfoJsonPath);
-		TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonStr);
-		TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
-		if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid())
-		{
-			JsonObject->TryGetStringField(TEXT("buildNumber"), Info.Version);
-		}
+		ParseProductInfoJson(Info, ProductInfoJsonPath);
 	}
 	return Info;
 }

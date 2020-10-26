@@ -3,7 +3,6 @@
 #pragma once
 
 #include "ISourceCodeAccessModule.h"
-#include "RiderSourceCodeAccessor.h"
 
 class FRiderSourceCodeAccessModule : public IModuleInterface
 {
@@ -13,5 +12,7 @@ public:
 	virtual void ShutdownModule() override;
 	virtual bool SupportsDynamicReloading() override;
 private:
-	TMap<FName, TSharedRef<FRiderSourceCodeAccessor>> RiderSourceCodeAccessors;
+	void GenerateSlnAccessors(const TArray<struct FInstallInfo>& InstallInfos);
+	void GenerateUprojectAccessors(const TArray<struct FInstallInfo>& InstallInfos);
+	TMap<FName, TSharedRef<ISourceCodeAccessor>> RiderSourceCodeAccessors;
 };

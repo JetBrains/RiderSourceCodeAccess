@@ -49,3 +49,27 @@ TArray<FInstallInfo> FRiderPathLocator::GetInstallInfos(const FString& ToolboxRi
 	}
 	return RiderInstallInfos;
 }
+
+void FRiderPathLocator::ParseProductInfoJson(FInstallInfo& Info, const FString& ProductInfoJsonPath)
+{
+	FString JsonStr;
+	FFileHelper::LoadFileToString(JsonStr, *ProductInfoJsonPath);
+	TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonStr);
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+	if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid())
+	{
+		FString VersionString;
+		JsonObject->TryGetStringField(TEXT("buildNumber"), VersionString);
+		Info.Version = VersionString;
+		const TSharedPtr<FJsonObject>* CustomProperties;
+		if(JsonObject->TryGetObjectField(TEXT("customProperties"), CustomProperties))
+		{
+			FString SupportUprojectState;
+			if(CustomProperties->Get()->TryGetStringField(TEXT("SupportUproject"), SupportUprojectState))
+			{
+				if(SupportUprojectState.Equals(TEXT("Beta"))) Info.SupportUprojectState = FInstallInfo::ESupportUproject::Beta;
+				if(SupportUprojectState.Equals(TEXT("Release"))) Info.SupportUprojectState = FInstallInfo::ESupportUproject::Release;
+			}
+		}
+	}
+}
