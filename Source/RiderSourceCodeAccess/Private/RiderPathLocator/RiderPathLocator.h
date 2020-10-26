@@ -69,6 +69,11 @@ struct FInstallInfo
 	{
 		return !(*this < InstallInfo) && !(InstallInfo < *this); 
 	}
+    
+    friend FORCEINLINE uint32 GetTypeHash(const FInstallInfo& InstallInfo)
+    {
+        return GetTypeHash(InstallInfo.Path);
+    }
 };
 
 class FRiderPathLocator
@@ -82,8 +87,3 @@ private:
 	static TArray<FInstallInfo> GetInstallInfosFromToolbox(const FString& ToolboxPath, const FString& Pattern);
 	static TArray<FInstallInfo> GetInstallInfos(const FString& ToolboxRiderRootPath, const FString& Pattern, bool IsToolbox);
 };
-		
-FORCEINLINE uint32 GetTypeHash(const FInstallInfo& InstallInfo)
-{
-	return GetTypeHash(InstallInfo.Path);
-}
