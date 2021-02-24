@@ -4,20 +4,27 @@
 
 #include "ISourceCodeAccessor.h"
 
-namespace FRiderPathLocator
-{
-	struct FInstallInfo;
-}
+struct FInstallInfo;
 
 class FRiderSourceCodeAccessor : public ISourceCodeAccessor
 {
 public:
-	enum class ACCESS_TYPE
+
+	static FName FeatureType() {return TEXT("SourceCodeAccessor");};
+	
+	enum class EAccessType
 	{
-		DIRECT,
-		AGGREGATE
+		Direct,
+		Aggregate
 	};
-	void Startup(const FRiderPathLocator::FInstallInfo & Info, ACCESS_TYPE Type = ACCESS_TYPE::DIRECT);
+
+	enum class EProjectModel
+	{
+		Sln,
+		Uproject
+	};
+	
+	void Init(const FInstallInfo& Info, EProjectModel ProjectModel, EAccessType Type = EAccessType::Direct);
 
 	/** ISourceCodeAccessor implementation */
 	virtual void RefreshAvailability() override;
@@ -33,8 +40,11 @@ public:
 	virtual bool AddSourceFiles(const TArray<FString>& AbsoluteSourcePaths, const TArray<FString>& AvailableModules) override;
 	virtual bool SaveAllOpenDocuments() const override;
 	virtual void Tick(const float) override {}
-private:	
+private:
+	void CachePathToUproject() const;
+	void CachePathToSln() const;
 	void CachePathToSolution() const;
+	bool TryGenerateSlnFile() const;
 	bool HandleOpeningRider(TFunction<bool()> Callback) const;
 
 	bool TryGenerateSolutionFile() const;
@@ -56,4 +66,5 @@ private:
 
 	/** Override for the cached solution path */
 	mutable FString CachedSolutionPathOverride = {};
+	EProjectModel Model = EProjectModel::Sln;
 };
