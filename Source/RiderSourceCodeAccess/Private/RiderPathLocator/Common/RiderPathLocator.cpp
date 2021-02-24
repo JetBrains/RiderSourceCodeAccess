@@ -61,15 +61,25 @@ void FRiderPathLocator::ParseProductInfoJson(FInstallInfo& Info, const FString& 
 		FString VersionString;
 		JsonObject->TryGetStringField(TEXT("buildNumber"), VersionString);
 		Info.Version = VersionString;
-		const TSharedPtr<FJsonObject>* CustomProperties;
-		if(JsonObject->TryGetObjectField(TEXT("customProperties"), CustomProperties))
+		const TArray< TSharedPtr<FJsonValue> >* CustomProperties;
+		if(!JsonObject->TryGetArrayField(TEXT("customProperties"), CustomProperties)) return;
+
+		for (const TSharedPtr<FJsonValue>& CustomProperty : *CustomProperties)
 		{
-			FString SupportUprojectState;
-			if(CustomProperties->Get()->TryGetStringField(TEXT("SupportUproject"), SupportUprojectState))
-			{
-				if(SupportUprojectState.Equals(TEXT("Beta"))) Info.SupportUprojectState = FInstallInfo::ESupportUproject::Beta;
-				if(SupportUprojectState.Equals(TEXT("Release"))) Info.SupportUprojectState = FInstallInfo::ESupportUproject::Release;
-			}
+			const TSharedPtr<FJsonObject> Item = CustomProperty->AsObject();
+			if(!Item.IsValid()) continue;
+			
+			FString SupportUprojectStateKey;
+			const bool bIsValidKey = Item->TryGetStringField(TEXT("key"), SupportUprojectStateKey);
+			if(!bIsValidKey) continue;
+			if(!SupportUprojectStateKey.Equals(TEXT("SupportUproject"))) continue;
+
+			FString SupportUprojectStateValue;
+			const bool bIsValidValue  = Item->TryGetStringField(TEXT("value"), SupportUprojectStateValue);
+			if(!bIsValidValue) continue;
+			
+			if(SupportUprojectStateValue.Equals(TEXT("Beta"))) Info.SupportUprojectState = FInstallInfo::ESupportUproject::Beta;
+			if(SupportUprojectStateValue.Equals(TEXT("Release"))) Info.SupportUprojectState = FInstallInfo::ESupportUproject::Release;
 		}
 	}
 }
