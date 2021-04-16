@@ -4,8 +4,9 @@ RiderSourceCodeAccess is a plugin for Unreal Engine, available through [Marketpl
 ## Functionality
 * Adds the option to select "Rider for Unreal Engine" as your IDE of choice in Unreal Editor.
 * You can select a specific version of Rider (e.g. Rider xxx.xx.xx) or,
-* Use the latest version of Rider that’s available on your workstation.
-![Example of dropdown box with Rider for Unreal Engine](https://cdn1.epicgames.com/ue/product/Screenshot/RiderSourceCodeAccesss-1920x1080-32507ce3de2846e20de0ef72904f707a.png)
+* Use the latest version of Rider that’s available on your workstation by selecting `Rider` option or,
+* Use experimental version of .uproject based project model in Rider that is available starting with UE 4.26.1 and Rider for Unreal Engine 2021.1.1.
+![Example of dropdown box with Rider for Unreal Engine](https://user-images.githubusercontent.com/1694911/115036768-76e76c00-9ed6-11eb-8ca5-d457b6051945.png)
 
 # How to add this plugin manually (not recommened)
 ## How to add to Game project
