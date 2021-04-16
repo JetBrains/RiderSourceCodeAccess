@@ -13,8 +13,8 @@ RiderSourceCodeAccess is a plugin for Unreal Engine, available through [Marketpl
 2. Unzip `RiderSourceCodeAccess.zip` to `RiderSourceCodeAccess` folder;
 3. Copy `RiderSourceCodeAccess` folder to `{GameProjectRoot}/Plugins/Developer`;
   a. If `{GameProjectRoot}/Plugins/Developer` does not exist, create it;
-4. Re-generate solution files - uproject file > context menu > Generate Visual Studio project files;
-5. Build UE project using Rider or Visual Studio;
+4. (For Windows and .sln project model only) Re-generate solution files - uproject file > context menu > Generate Visual Studio project files;
+5. Build UE project using Rider (or any other IDE that you've setup for your OS);
 6. Start Unreal Editor;
 7. Edit > Editor Preferences ... > General > Source Code > Source Code Editor;
 8. Select Rider from drop down list. NB: only Rider with C++ plugins will be available from drop down list.
@@ -25,8 +25,8 @@ RiderSourceCodeAccess is a plugin for Unreal Engine, available through [Marketpl
 2. Unzip `RiderSourceCodeAccess.zip` to `RiderSourceCodeAccess` folder;
 3. Copy `RiderSourceCodeAccess` folder to `{UnrealEngineRoot}/Engine/Plugins/Developer`;
   a. If `{UnrealEngineRoot}/Engine/Plugins/Developer` does not exist, create it;
-4. Re-generate solution files - uproject file > context menu > Generate Visual Studio project files;
-5. Build UE project using Rider or Visual Studio;
+4. (For Windows and .sln project model only) Re-generate solution files - uproject file > context menu > Generate Visual Studio project files;
+5. Build UE project using Rider (or any other IDE that you've setup for your OS);
 6. Start Unreal Editor;
 7. Edit > Editor Preferences ... > General > Source Code > Source Code Editor;
 8. Select Rider from drop down list. NB: only Rider with C++ plugins will be available from drop down list.
@@ -36,8 +36,8 @@ RiderSourceCodeAccess is a plugin for Unreal Engine, available through [Marketpl
 2. Unzip `RiderSourceCodeAccess.zip` to `RiderSourceCodeAccess` folder;
 3. Copy `RiderSourceCodeAccess` folder to `{UnrealProjectRoot}/Plugins/Developer`;
   a. If `{UnrealProjectRoot}/Plugins/Developer` does not exist, create it;
-4. Re-generate solution files - uproject file > context menu > Generate Visual Studio project files;
-5. Build UE project using Rider or Visual Studio;
+4.(For Windows and .sln project model only) Re-generate solution files - uproject file > context menu > Generate Visual Studio project files;
+5. Build UE project using Rider (or any other IDE that you've setup for your OS);
 6. Move `RiderSourceCodeAccess` folder from `{UnrealProjectRoot}/Plugins/Developer` to `{UnrealEngineRoot}/Engine/Plugins/Developer`;
 7. Start Unreal Editor;
 8. Edit > Editor Preferences ... > General > Source Code > Source Code Editor;
