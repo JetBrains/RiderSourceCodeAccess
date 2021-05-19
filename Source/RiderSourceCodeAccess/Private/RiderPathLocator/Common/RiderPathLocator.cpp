@@ -1,5 +1,6 @@
-﻿#include "RiderPathLocator/RiderPathLocator.h"
+#include "RiderPathLocator/RiderPathLocator.h"
 
+#include "IPluginManager.h"
 #include "Dom/JsonObject.h"
 #include "Internationalization/Regex.h"
 #include "Misc/FileHelper.h"
@@ -82,4 +83,20 @@ void FRiderPathLocator::ParseProductInfoJson(FInstallInfo& Info, const FString& 
 			if(SupportUprojectStateValue.Equals(TEXT("Release"))) Info.SupportUprojectState = FInstallInfo::ESupportUproject::Release;
 		}
 	}
+}
+
+TArray<FInstallInfo> FRiderPathLocator::GetInstallInfosFromResourceFile()
+{
+	FString RiderLocationsFile = IPluginManager::Get().FindPlugin(TEXT("RiderSourceCodeAccess"))->GetBaseDir() / TEXT("Resources/RiderLocations.txt");
+	TArray<FString> RiderLocations;
+	if(FFileHelper::LoadFileToStringArray(RiderLocations, *RiderLocationsFile) == false) return {};
+
+	TArray<FInstallInfo> RiderInstallInfos;
+	for(const auto& RiderLocation : RiderLocations)
+	{
+		TOptional<FInstallInfo> InstallInfo = GetInstallInfoFromRiderPath(RiderLocation, false);
+		if(InstallInfo.IsSet())
+			RiderInstallInfos.Add(InstallInfo.GetValue());
+	}
+	return RiderInstallInfos;
 }

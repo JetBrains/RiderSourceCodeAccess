@@ -89,6 +89,7 @@ TSet<FInstallInfo> FRiderPathLocator::CollectAllPaths()
 	InstallInfos.Append(GetInstalledRidersWithMdfind());
 	InstallInfos.Append(GetManuallyInstalledRiders());
 	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(), "Rider*.app"));
+	InstallInfos.Append(GetInstallInfosFromResourceFile());
 	return InstallInfos;
 }
 #endif
