@@ -9,7 +9,7 @@
 
 #if PLATFORM_LINUX
 
-TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FString& PathToRiderApp, bool bIsToolbox)
+TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FString& PathToRiderApp, FInstallInfo::EInstallType InstallType)
 {
 	if(!FPaths::DirectoryExists(PathToRiderApp)) return {};
 
@@ -19,7 +19,7 @@ TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FSt
 	
 	FInstallInfo Info;
 	Info.Path = FPaths::Combine(PathToRiderApp, TEXT("bin"), TEXT("rider.sh"));
-	Info.IsToolbox = bIsToolbox;
+	Info.InstallType = InstallType;
 	const FString ProductInfoJsonPath = FPaths::Combine(PathToRiderApp, TEXT("product-info.json"));
 	if (FPaths::FileExists(ProductInfoJsonPath))
 	{
@@ -54,7 +54,7 @@ static TArray<FInstallInfo> GetManuallyInstalledRiders()
 	for(const FString& RiderPath: RiderPaths)
 	{
 		FString FullPath = FPaths::Combine(FHomePath, RiderPath);
-		TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(FullPath, false);
+		TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(FullPath, FInstallInfo::EInstallType::Installed);
 		if(InstallInfo.IsSet())
 			Result.Add(InstallInfo.GetValue());
 	}
@@ -88,7 +88,7 @@ static TArray<FInstallInfo> GetInstalledRidersWithMdfind()
     TArray<FInstallInfo> Result;
     for(const FString& RiderPath: RiderPaths)
     {
-        TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(RiderPath, false);
+        TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(RiderPath, FInstallInfo::EInstallType::Installed);
         if(InstallInfo.IsSet())
             Result.Add(InstallInfo.GetValue());
     }

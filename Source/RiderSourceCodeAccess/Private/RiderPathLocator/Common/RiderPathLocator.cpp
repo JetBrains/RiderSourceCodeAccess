@@ -1,7 +1,7 @@
 #include "RiderPathLocator/RiderPathLocator.h"
 
-#include "IPluginManager.h"
 #include "Dom/JsonObject.h"
+#include "Interfaces/IPluginManager.h"
 #include "Internationalization/Regex.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
@@ -34,17 +34,17 @@ TArray<FInstallInfo> FRiderPathLocator::GetInstallInfosFromToolbox(const FString
 	const FString ToolboxRiderRootPath = FPaths::Combine(InstallPath, TEXT("apps"));
 	if(!FPaths::DirectoryExists(ToolboxRiderRootPath)) return {};
 
-	return GetInstallInfos(ToolboxRiderRootPath, Pattern, true);
+	return GetInstallInfos(ToolboxRiderRootPath, Pattern, FInstallInfo::EInstallType::Toolbox);
 }
 
-TArray<FInstallInfo> FRiderPathLocator::GetInstallInfos(const FString& ToolboxRiderRootPath, const FString& Pattern, bool IsToolbox)
+TArray<FInstallInfo> FRiderPathLocator::GetInstallInfos(const FString& ToolboxRiderRootPath, const FString& Pattern, FInstallInfo::EInstallType InstallType)
 {
 	TArray<FInstallInfo> RiderInstallInfos;
 	TArray<FString> RiderPaths;
 	IFileManager::Get().FindFilesRecursive(RiderPaths, *ToolboxRiderRootPath, *Pattern, true, true);
 	for(const FString& RiderPath: RiderPaths)
 	{
-		TOptional<FInstallInfo> InstallInfo = GetInstallInfoFromRiderPath(RiderPath, IsToolbox);
+		TOptional<FInstallInfo> InstallInfo = GetInstallInfoFromRiderPath(RiderPath, InstallType);
 		if(InstallInfo.IsSet())
 			RiderInstallInfos.Add(InstallInfo.GetValue());
 	}
@@ -87,14 +87,20 @@ void FRiderPathLocator::ParseProductInfoJson(FInstallInfo& Info, const FString& 
 
 TArray<FInstallInfo> FRiderPathLocator::GetInstallInfosFromResourceFile()
 {
-	FString RiderLocationsFile = IPluginManager::Get().FindPlugin(TEXT("RiderSourceCodeAccess"))->GetBaseDir() / TEXT("Resources/RiderLocations.txt");
+	const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("RiderSourceCodeAccess"));
+	if(!Plugin.IsValid()) return {};
+	
+	const FString RiderLocationsFile = FPaths::Combine(Plugin->GetBaseDir(), TEXT("Resources"), TEXT("RiderLocations.txt"));
 	TArray<FString> RiderLocations;
 	if(FFileHelper::LoadFileToStringArray(RiderLocations, *RiderLocationsFile) == false) return {};
 
 	TArray<FInstallInfo> RiderInstallInfos;
 	for(const auto& RiderLocation : RiderLocations)
 	{
-		TOptional<FInstallInfo> InstallInfo = GetInstallInfoFromRiderPath(RiderLocation, false);
+		const FString Location = RiderLocation.TrimStartAndEnd();
+		if(Location.StartsWith("#")) continue;
+		
+		TOptional<FInstallInfo> InstallInfo = GetInstallInfoFromRiderPath(Location, FInstallInfo::EInstallType::Custom);
 		if(InstallInfo.IsSet())
 			RiderInstallInfos.Add(InstallInfo.GetValue());
 	}

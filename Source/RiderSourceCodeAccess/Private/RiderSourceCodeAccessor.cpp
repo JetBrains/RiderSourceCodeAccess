@@ -229,7 +229,13 @@ void FRiderSourceCodeAccessor::Init(const FInstallInfo& Info, EProjectModel Proj
 {
 	Model = ProjectModel; 
 	ExecutablePath = Info.Path;
-	const FString IsToolboxText = Info.IsToolbox ? TEXT("(toolbox)") : TEXT("(installed)");
+	FString SuffixText = "";
+	switch (Info.InstallType) {
+		case FInstallInfo::EInstallType::Installed: SuffixText = TEXT("(installed)"); break;
+		case FInstallInfo::EInstallType::Toolbox: SuffixText = TEXT("(toolbox)");  break;
+		case FInstallInfo::EInstallType::Custom: SuffixText = TEXT("(custom)");  break;
+		default: ;
+	}
 	FString UprojectSuffix = "";
 	if(ProjectModel == EProjectModel::Uproject)
 	{
@@ -240,7 +246,7 @@ void FRiderSourceCodeAccessor::Init(const FInstallInfo& Info, EProjectModel Proj
 	FString NewName;
 	if(Type == EAccessType::Direct)
 	{
-		NewName = *FString::Format(TEXT("Rider {0} {1}{2}"), { Info.Version.ToString(), IsToolboxText, UprojectSuffix });
+		NewName = *FString::Format(TEXT("Rider {0} {1}{2}"), { Info.Version.ToString(), SuffixText, UprojectSuffix });
 	}
 	else
 	{
