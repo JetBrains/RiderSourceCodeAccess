@@ -7,19 +7,20 @@
 
 #include "Runtime/Launch/Resources/Version.h"
 
-#if PLATFORM_MAC
+#if PLATFORM_LINUX
 
 TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FString& PathToRiderApp, FInstallInfo::EInstallType InstallType)
 {
 	if(!FPaths::DirectoryExists(PathToRiderApp)) return {};
 
-	const FString RiderCppPluginPath = FPaths::Combine(PathToRiderApp, TEXT("Contents"), TEXT("plugins"), TEXT("rider-cpp"));
+	const FString RiderCppPluginPath = FPaths::Combine(PathToRiderApp, TEXT("plugins"), TEXT("rider-cpp"));
+
 	if (!FPaths::DirectoryExists(RiderCppPluginPath)) return {};
 	
 	FInstallInfo Info;
-	Info.Path = FPaths::Combine(PathToRiderApp, TEXT("Contents"), TEXT("MacOS"), TEXT("rider"));
+	Info.Path = FPaths::Combine(PathToRiderApp, TEXT("bin"), TEXT("rider.sh"));
 	Info.InstallType = InstallType;
-	const FString ProductInfoJsonPath = FPaths::Combine(PathToRiderApp, TEXT("Contents"), TEXT("Resources"), TEXT("product-info.json"));
+	const FString ProductInfoJsonPath = FPaths::Combine(PathToRiderApp, TEXT("product-info.json"));
 	if (FPaths::FileExists(ProductInfoJsonPath))
 	{
 		ParseProductInfoJson(Info, ProductInfoJsonPath);
@@ -27,14 +28,32 @@ TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FSt
 	return Info;
 }
 
+static FString GetHomePath()
+{
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 20
+	TCHAR CHomePath[4096];
+	FPlatformMisc::GetEnvironmentVariable(TEXT("HOME"), CHomePath, ARRAY_COUNT(CHomePath));
+	const FString FHomePath = CHomePath;
+#else
+	const FString FHomePath = FPlatformMisc::GetEnvironmentVariable(TEXT("HOME"));
+#endif
+
+	return FHomePath;
+}
+
 static TArray<FInstallInfo> GetManuallyInstalledRiders()
 {
 	TArray<FInstallInfo> Result;
 	TArray<FString> RiderPaths;
-	IFileManager::Get().FindFiles(RiderPaths, TEXT("/Applications/Rider*.app"), false, true);
+	const FString FHomePath = GetHomePath();
+
+	const FString LocalPathMask = FPaths::Combine(FHomePath, TEXT("Rider*"));
+	
+	IFileManager::Get().FindFiles(RiderPaths, *LocalPathMask, false, true);
+
 	for(const FString& RiderPath: RiderPaths)
 	{
-		FString FullPath = TEXT("/Applications/") + RiderPath;
+		FString FullPath = FPaths::Combine(FHomePath, RiderPath);
 		TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(FullPath, FInstallInfo::EInstallType::Installed);
 		if(InstallInfo.IsSet())
 			Result.Add(InstallInfo.GetValue());
@@ -45,14 +64,7 @@ static TArray<FInstallInfo> GetManuallyInstalledRiders()
 static FString GetToolboxPath()
 {
 	TArray<FInstallInfo> Result;
-#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 20
-	TCHAR CHomePath[4096];
-	FPlatformMisc::GetEnvironmentVariable(TEXT("HOME"), CHomePath, ARRAY_COUNT(CHomePath));
-	const FString FHomePath = CHomePath;
-#else
-	const FString FHomePath = FPlatformMisc::GetEnvironmentVariable(TEXT("HOME"));
-#endif
-	FString LocalAppData = FPaths::Combine(FHomePath, TEXT("Library"), TEXT("Application Support"));
+	FString LocalAppData = FPaths::Combine(GetHomePath(), TEXT(".local"), TEXT("share"));
 
 	return FPaths::Combine(LocalAppData, TEXT("JetBrains"), TEXT("Toolbox"));
 }
@@ -88,7 +100,7 @@ TSet<FInstallInfo> FRiderPathLocator::CollectAllPaths()
 	TSet<FInstallInfo> InstallInfos;
 	InstallInfos.Append(GetInstalledRidersWithMdfind());
 	InstallInfos.Append(GetManuallyInstalledRiders());
-	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(), "Rider*.app"));
+	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(), "Rider*"));
 	InstallInfos.Append(GetInstallInfosFromResourceFile());
 	return InstallInfos;
 }

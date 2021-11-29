@@ -19,7 +19,7 @@ static FString GetToolboxPath(const Windows::HKEY RootKey)
 	if (!FWindowsPlatformMisc::QueryRegKey(RootKey, TEXT("Software\\JetBrains\\Toolbox\\"), TEXT(""), ToolboxBinPath)) return {};
 
 	FPaths::NormalizeDirectoryName(ToolboxBinPath);
-	const FString PatternString(TEXT("(.*)/bin"));
+	const FString PatternString(TEXT("(.*)(?:\\\\|/)bin"));
 	const FRegexPattern Pattern(PatternString);
 	FRegexMatcher ToolboxPathMatcher(Pattern, ToolboxBinPath);
 	if (!ToolboxPathMatcher.FindNext()) return {};
@@ -114,7 +114,7 @@ static TArray<FInstallInfo> CollectPathsFromRegistry( const Windows::HKEY RootKe
 					FString InstallLocation;
 					if (GetStringRegKey(SubKey, Value, InstallLocation) != ERROR_SUCCESS) continue;
 					const FString ExePath = FPaths::Combine(InstallLocation, TEXT("bin"), TEXT("rider64.exe"));
-					TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(ExePath, false);
+					TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(ExePath, FInstallInfo::EInstallType::Installed);
 					if(InstallInfo.IsSet())
 						InstallInfos.Add(InstallInfo.GetValue());
 				}
@@ -126,11 +126,11 @@ static TArray<FInstallInfo> CollectPathsFromRegistry( const Windows::HKEY RootKe
 	return InstallInfos;
 }
 
-TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FString& Path, bool bIsToolbox)
+TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FString& Path, FInstallInfo::EInstallType InstallType)
 {
 	if(!FPaths::FileExists(Path)) return {};
 	
-	const FString PatternString(TEXT("(.*)/bin"));
+	const FString PatternString(TEXT("(.*)(?:\\\\|/)bin"));
 	const FRegexPattern Pattern(PatternString);
 	FRegexMatcher RiderPathMatcher(Pattern, Path);
 	if (!RiderPathMatcher.FindNext()) return {};
@@ -141,7 +141,7 @@ TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FSt
 	
 	FInstallInfo Info;
 	Info.Path = Path;
-	Info.IsToolbox = bIsToolbox;
+	Info.InstallType = InstallType;
 	const FString ProductInfoJsonPath = FPaths::Combine(RiderDir, TEXT("product-info.json"));
 	if (FPaths::FileExists(ProductInfoJsonPath))
 	{
@@ -163,6 +163,7 @@ TSet<FInstallInfo> FRiderPathLocator::CollectAllPaths()
 	InstallInfos.Append(CollectPathsFromRegistry(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
 	InstallInfos.Append(CollectPathsFromRegistry(HKEY_CURRENT_USER, TEXT("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
 	InstallInfos.Append(CollectPathsFromRegistry(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
+	InstallInfos.Append(GetInstallInfosFromResourceFile());
 	return InstallInfos;
 }
 #endif
