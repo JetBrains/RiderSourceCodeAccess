@@ -12,11 +12,25 @@
 #include <winreg.h>
 #include "Windows/HideWindowsPlatformTypes.h"
 
-static FString GetToolboxPath(const Windows::HKEY RootKey)
+static FString GetToolboxPath()
+{	
+	TArray<FInstallInfo> Result;
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 20
+	TCHAR CHomePath[4096];
+	FPlatformMisc::GetEnvironmentVariable(TEXT("LOCALAPPDATA"), CHomePath, ARRAY_COUNT(CHomePath));
+	const FString LocalAppData = CHomePath;
+#else
+	const FString LocalAppData = FPlatformMisc::GetEnvironmentVariable(TEXT("LOCALAPPDATA"));
+#endif
+
+	return FPaths::Combine(LocalAppData, TEXT("JetBrains"), TEXT("Toolbox"));
+}
+
+static FString GetToolboxPath(const Windows::HKEY RootKey, const FString& RegistryKey)
 {
 	FString ToolboxBinPath;
 
-	if (!FWindowsPlatformMisc::QueryRegKey(RootKey, TEXT("Software\\JetBrains\\Toolbox\\"), TEXT(""), ToolboxBinPath)) return {};
+	if (!FWindowsPlatformMisc::QueryRegKey(RootKey, *RegistryKey, TEXT(""), ToolboxBinPath)) return {};
 
 	FPaths::NormalizeDirectoryName(ToolboxBinPath);
 	const FString PatternString(TEXT("(.*)(?:\\\\|/)bin"));
@@ -157,8 +171,11 @@ TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FSt
 TSet<FInstallInfo> FRiderPathLocator::CollectAllPaths()
 {
 	TSet<FInstallInfo> InstallInfos;
-	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(HKEY_CURRENT_USER), "rider64.exe"));
-	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(HKEY_LOCAL_MACHINE), "rider64.exe"));
+	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(), "rider64.exe"));
+	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(HKEY_CURRENT_USER, TEXT("Software\\JetBrains\\Toolbox\\")), "rider64.exe"));
+	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(HKEY_LOCAL_MACHINE, TEXT("Software\\JetBrains\\Toolbox\\")), "rider64.exe"));
+	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(HKEY_CURRENT_USER, TEXT("Software\\JetBrains s.r.o.\\JetBrainsToolbox\\")), "rider64.exe"));
+	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(HKEY_LOCAL_MACHINE, TEXT("Software\\JetBrains s.r.o.\\JetBrainsToolbox\\")), "rider64.exe"));
 	InstallInfos.Append(CollectPathsFromRegistry(HKEY_CURRENT_USER, TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
 	InstallInfos.Append(CollectPathsFromRegistry(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
 	InstallInfos.Append(CollectPathsFromRegistry(HKEY_CURRENT_USER, TEXT("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
