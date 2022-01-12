@@ -39,12 +39,16 @@ void FRiderSourceCodeAccessModule::GenerateSlnAccessors(const TArray<FInstallInf
 #if PLATFORM_WINDOWS
 	if(InstallInfos.Num() == 0) return;
 	
-	for (const FInstallInfo& InstallInfo : InstallInfos)
+	if(InstallInfos.Num() > 1)
 	{
-		TSharedRef<FRiderSourceCodeAccessor> RiderSourceCodeAccessor = MakeShareable(new FRiderSourceCodeAccessor());
-		RiderSourceCodeAccessor->Init(InstallInfo, FRiderSourceCodeAccessor::EProjectModel::Sln);
-		IModularFeatures::Get().RegisterModularFeature(FRiderSourceCodeAccessor::FeatureType(), &RiderSourceCodeAccessor.Get());
-		RiderSourceCodeAccessors.Add(RiderSourceCodeAccessor->GetFName(), RiderSourceCodeAccessor);
+		for (const FInstallInfo& InstallInfo : InstallInfos)
+		{
+			TSharedRef<FRiderSourceCodeAccessor> RiderSourceCodeAccessor = MakeShareable(new FRiderSourceCodeAccessor());
+			RiderSourceCodeAccessor->Init(InstallInfo, FRiderSourceCodeAccessor::EProjectModel::Sln);
+			IModularFeatures::Get().RegisterModularFeature(FRiderSourceCodeAccessor::FeatureType(), &RiderSourceCodeAccessor.Get());
+			RiderSourceCodeAccessors.Add(RiderSourceCodeAccessor->GetFName(), RiderSourceCodeAccessor);
+		}
+
 	}
 
 	const TSharedRef<FRiderSourceCodeAccessor> RiderSourceCodeAccessor = MakeShareable(new FRiderSourceCodeAccessor());
@@ -64,12 +68,15 @@ void FRiderSourceCodeAccessModule::GenerateUprojectAccessors(const TArray<FInsta
 
 	if(UprojectInfos.Num() == 0) return;
 
-	for (const FInstallInfo& UprojectInfo : UprojectInfos)
+	if(UprojectInfos.Num() > 1)
 	{
-		TSharedRef<FRiderSourceCodeAccessor> RiderSourceCodeAccessor = MakeShareable(new FRiderSourceCodeAccessor());
-		RiderSourceCodeAccessor->Init(UprojectInfo, FRiderSourceCodeAccessor::EProjectModel::Uproject);
-		IModularFeatures::Get().RegisterModularFeature(FRiderSourceCodeAccessor::FeatureType(), &RiderSourceCodeAccessor.Get());
-		RiderSourceCodeAccessors.Add(RiderSourceCodeAccessor->GetFName(), RiderSourceCodeAccessor);
+		for (const FInstallInfo& UprojectInfo : UprojectInfos)
+		{
+			TSharedRef<FRiderSourceCodeAccessor> RiderSourceCodeAccessor = MakeShareable(new FRiderSourceCodeAccessor());
+			RiderSourceCodeAccessor->Init(UprojectInfo, FRiderSourceCodeAccessor::EProjectModel::Uproject);
+			IModularFeatures::Get().RegisterModularFeature(FRiderSourceCodeAccessor::FeatureType(), &RiderSourceCodeAccessor.Get());
+			RiderSourceCodeAccessors.Add(RiderSourceCodeAccessor->GetFName(), RiderSourceCodeAccessor);
+		}
 	}
 
 	const TSharedRef<FRiderSourceCodeAccessor> RiderSourceCodeAccessor = MakeShareable(new FRiderSourceCodeAccessor());
