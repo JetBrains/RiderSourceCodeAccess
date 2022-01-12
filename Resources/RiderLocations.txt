@@ -2,6 +2,6 @@
 # Windows:
 #    C:\\Program Files\\Toolbox\\Tools\\apps\\Rider For Unreal Engine\\ch-0\\211.7442.67\\bin\rider64.exe
 # MacOS:
-#    /Users/user.name/Library/Application Support/JetBrains/Toolbox/apps/Rider For Unreal Engine/ch-0/212.4488.6/Rider.app/Contents/MacOS/rider
+#    /Users/user.name/Library/Application Support/JetBrains/Toolbox/apps/Rider For Unreal Engine/ch-0/212.4488.6/Rider.app
 # Linux:
 #    /home/user/.local/share/JetBrains/Toolbox/apps/Rider/ch-0/211.7442.29/bin/rider.sh
