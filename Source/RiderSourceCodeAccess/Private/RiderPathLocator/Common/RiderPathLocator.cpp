@@ -62,6 +62,12 @@ void FRiderPathLocator::ParseProductInfoJson(FInstallInfo& Info, const FString& 
 		FString VersionString;
 		JsonObject->TryGetStringField(TEXT("buildNumber"), VersionString);
 		Info.Version = VersionString;
+		if(Info.Version.Major() >= 221)
+		{
+			Info.SupportUprojectState = FInstallInfo::ESupportUproject::Release;
+			return;
+		}
+
 		const TArray< TSharedPtr<FJsonValue> >* CustomProperties;
 		if(!JsonObject->TryGetArrayField(TEXT("customProperties"), CustomProperties)) return;
 

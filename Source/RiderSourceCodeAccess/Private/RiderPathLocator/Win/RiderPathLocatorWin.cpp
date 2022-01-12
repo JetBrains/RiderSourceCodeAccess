@@ -164,6 +164,10 @@ TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FSt
 	if(!Info.Version.IsInitialized())
 	{
 		Info.Version = FPaths::GetBaseFilename(RiderDir);
+		if(Info.Version.Major() >= 221)
+		{
+			Info.SupportUprojectState = FInstallInfo::ESupportUproject::Release;
+		}
 	}
 	return Info;
 }

@@ -4,12 +4,7 @@
 #include "CoreMinimal.h"
 
 struct FVersion
-{
-	FVersion() = default;
-	~FVersion() = default;
-	
-	TArray<int32> Versions;
-
+{	
 	bool IsInitialized() const { return Versions.Num() != 0; }
 
 	void operator=(const FString& VersionString)
@@ -20,6 +15,33 @@ struct FVersion
 		{
 			Versions.Add(FCString::Atoi(*Item));
 		}		
+	}
+
+	int32 Major() const
+	{
+		if(Versions.Num() >= 1)
+		{
+			return Versions[0];
+		}
+		return INVALID_VERSION;
+	}
+
+	int32 Minor() const
+	{
+		if(Versions.Num() >= 2)
+		{
+			return Versions[1];
+		}
+		return INVALID_VERSION;
+	}
+
+	int32 Patch() const
+	{
+		if(Versions.Num() >= 3)
+		{
+			return Versions[2];
+		}
+		return INVALID_VERSION;
 	}
 
 	bool operator<(const FVersion& rhs) const
@@ -42,6 +64,10 @@ struct FVersion
 	{
 		return FString::JoinBy(Versions, TEXT("."), [](int32 Item)-> FString { return FString::FromInt(Item); });
 	}
+
+	
+	TArray<int32> Versions;
+	static const int32 INVALID_VERSION = -1;
 };
 
 struct FInstallInfo
