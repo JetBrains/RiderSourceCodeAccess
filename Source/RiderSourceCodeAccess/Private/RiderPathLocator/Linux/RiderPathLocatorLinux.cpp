@@ -9,21 +9,30 @@
 
 #if PLATFORM_LINUX
 
-TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FString& PathToRiderApp, FInstallInfo::EInstallType InstallType)
+TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FString& Path, FInstallInfo::EInstallType InstallType)
 {
-	if(!FPaths::DirectoryExists(PathToRiderApp)) return {};
+	if(!FPaths::FileExists(Path)) return {};
+	
+	const FString PatternString(TEXT("(.*)(?:\\\\|/)bin"));
+	const FRegexPattern Pattern(PatternString);
+	FRegexMatcher RiderPathMatcher(Pattern, Path);
+	if (!RiderPathMatcher.FindNext()) return {};
 
-	const FString RiderCppPluginPath = FPaths::Combine(PathToRiderApp, TEXT("plugins"), TEXT("rider-cpp"));
-
+	const FString RiderDir = RiderPathMatcher.GetCaptureGroup(1);
+	const FString RiderCppPluginPath = FPaths::Combine(RiderDir, TEXT("plugins"), TEXT("rider-cpp"));
 	if (!FPaths::DirectoryExists(RiderCppPluginPath)) return {};
 	
 	FInstallInfo Info;
-	Info.Path = FPaths::Combine(PathToRiderApp, TEXT("bin"), TEXT("rider.sh"));
+	Info.Path = Path;
 	Info.InstallType = InstallType;
-	const FString ProductInfoJsonPath = FPaths::Combine(PathToRiderApp, TEXT("product-info.json"));
+	const FString ProductInfoJsonPath = FPaths::Combine(RiderDir, TEXT("product-info.json"));
 	if (FPaths::FileExists(ProductInfoJsonPath))
 	{
 		ParseProductInfoJson(Info, ProductInfoJsonPath);
+	}
+	if(!Info.Version.IsInitialized())
+	{
+		Info.Version = FPaths::GetBaseFilename(RiderDir);
 	}
 	return Info;
 }
@@ -45,15 +54,28 @@ static TArray<FInstallInfo> GetManuallyInstalledRiders()
 {
 	TArray<FInstallInfo> Result;
 	TArray<FString> RiderPaths;
-	const FString FHomePath = GetHomePath();
 
-	const FString LocalPathMask = FPaths::Combine(FHomePath, TEXT("Rider*"));
+	const FString FHomePath = GetHomePath();
+	const FString HomePathMask = FPaths::Combine(FHomePath, TEXT("Rider*"));
 	
-	IFileManager::Get().FindFiles(RiderPaths, *LocalPathMask, false, true);
+	IFileManager::Get().FindFiles(RiderPaths, *HomePathMask, false, true);
 
 	for(const FString& RiderPath: RiderPaths)
 	{
 		FString FullPath = FPaths::Combine(FHomePath, RiderPath);
+		TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(FullPath, FInstallInfo::EInstallType::Installed);
+		if(InstallInfo.IsSet())
+			Result.Add(InstallInfo.GetValue());
+	}
+
+	const FString FOptPath = TEXT("/opt");
+	const FString OptPathMask = FPaths::Combine(FOptPath, TEXT("Rider*"));
+	
+	IFileManager::Get().FindFiles(RiderPaths, *OptPathMask, false, true);
+
+	for(const FString& RiderPath: RiderPaths)
+	{
+		FString FullPath = FPaths::Combine(FOptPath, RiderPath);
 		TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(FullPath, FInstallInfo::EInstallType::Installed);
 		if(InstallInfo.IsSet())
 			Result.Add(InstallInfo.GetValue());
