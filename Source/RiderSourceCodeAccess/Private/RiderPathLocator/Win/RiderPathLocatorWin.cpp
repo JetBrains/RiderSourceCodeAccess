@@ -130,7 +130,9 @@ static TArray<FInstallInfo> CollectPathsFromRegistry( const Windows::HKEY RootKe
 					const FString ExePath = FPaths::Combine(InstallLocation, TEXT("bin"), TEXT("rider64.exe"));
 					TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(ExePath, FInstallInfo::EInstallType::Installed);
 					if(InstallInfo.IsSet())
-						InstallInfos.Add(InstallInfo.GetValue());
+					{
+						Result.Add(InstallInfo.GetValue());
+					}
 				}
 
 			}

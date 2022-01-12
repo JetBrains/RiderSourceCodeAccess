@@ -11,16 +11,25 @@
 
 TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FString& Path, FInstallInfo::EInstallType InstallType)
 {
-	if(!FPaths::FileExists(Path)) return {};
+	if(!FPaths::FileExists(Path))
+	{
+		return {};
+	}
 	
 	const FString PatternString(TEXT("(.*)(?:\\\\|/)bin"));
 	const FRegexPattern Pattern(PatternString);
 	FRegexMatcher RiderPathMatcher(Pattern, Path);
-	if (!RiderPathMatcher.FindNext()) return {};
+	if (!RiderPathMatcher.FindNext())
+	{
+		return {};
+	}
 
 	const FString RiderDir = RiderPathMatcher.GetCaptureGroup(1);
 	const FString RiderCppPluginPath = FPaths::Combine(RiderDir, TEXT("plugins"), TEXT("rider-cpp"));
-	if (!FPaths::DirectoryExists(RiderCppPluginPath)) return {};
+	if (!FPaths::DirectoryExists(RiderCppPluginPath))
+	{
+		return {};
+	}
 	
 	FInstallInfo Info;
 	Info.Path = Path;
@@ -69,7 +78,9 @@ static TArray<FInstallInfo> GetManuallyInstalledRiders()
 		FString FullPath = FPaths::Combine(FHomePath, RiderPath);
 		TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(FullPath, FInstallInfo::EInstallType::Installed);
 		if(InstallInfo.IsSet())
+		{
 			Result.Add(InstallInfo.GetValue());
+		}
 	}
 
 	const FString FOptPath = TEXT("/opt");
@@ -82,7 +93,9 @@ static TArray<FInstallInfo> GetManuallyInstalledRiders()
 		FString FullPath = FPaths::Combine(FOptPath, RiderPath);
 		TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(FullPath, FInstallInfo::EInstallType::Installed);
 		if(InstallInfo.IsSet())
+		{
 			Result.Add(InstallInfo.GetValue());
+		}
 	}
 	return Result;
 }
@@ -100,23 +113,36 @@ static TArray<FInstallInfo> GetInstalledRidersWithMdfind()
     int32 ReturnCode;
     FString OutResults;
     FString OutErrors;
+
+	// avoid trying to run mdfind if it doesnt exists
+	if (!FPaths::FileExists(TEXT("/usr/bin/mdfind")))
+	{
+		return {};
+	}
+
     FPlatformProcess::ExecProcess(TEXT("/usr/bin/mdfind"), TEXT("\"kMDItemKind == Application\""), &ReturnCode, &OutResults, &OutErrors);
     if (ReturnCode != 0)
+	{
 		return {};
+	}
 
     TArray<FString> RiderPaths;
 	FString TmpString;
 	while(OutResults.Split(TEXT("\n"), &TmpString, &OutResults))
 	{
 		if(TmpString.Contains(TEXT("Rider")))
+		{
 			RiderPaths.Add(TmpString);
+		}
 	}
     TArray<FInstallInfo> Result;
     for(const FString& RiderPath: RiderPaths)
     {
         TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(RiderPath, FInstallInfo::EInstallType::Installed);
         if(InstallInfo.IsSet())
-            Result.Add(InstallInfo.GetValue());
+		{
+			Result.Add(InstallInfo.GetValue());
+		}
     }
     return Result;
 }

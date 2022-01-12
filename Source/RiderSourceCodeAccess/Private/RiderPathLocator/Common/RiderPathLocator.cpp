@@ -46,7 +46,9 @@ TArray<FInstallInfo> FRiderPathLocator::GetInstallInfos(const FString& ToolboxRi
 	{
 		TOptional<FInstallInfo> InstallInfo = GetInstallInfoFromRiderPath(RiderPath, InstallType);
 		if(InstallInfo.IsSet())
+		{
 			RiderInstallInfos.Add(InstallInfo.GetValue());
+		}
 	}
 	return RiderInstallInfos;
 }
@@ -109,7 +111,9 @@ TArray<FInstallInfo> FRiderPathLocator::GetInstallInfosFromResourceFile()
 		
 		TOptional<FInstallInfo> InstallInfo = GetInstallInfoFromRiderPath(Location, FInstallInfo::EInstallType::Custom);
 		if(InstallInfo.IsSet())
+		{
 			RiderInstallInfos.Add(InstallInfo.GetValue());
+		}
 	}
 	return RiderInstallInfos;
 }
