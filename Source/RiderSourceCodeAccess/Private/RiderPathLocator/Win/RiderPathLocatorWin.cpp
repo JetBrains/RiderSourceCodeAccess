@@ -131,7 +131,7 @@ static TArray<FInstallInfo> CollectPathsFromRegistry( const Windows::HKEY RootKe
 					TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(ExePath, FInstallInfo::EInstallType::Installed);
 					if(InstallInfo.IsSet())
 					{
-						Result.Add(InstallInfo.GetValue());
+						InstallInfos.Add(InstallInfo.GetValue());
 					}
 				}
 
@@ -144,16 +144,25 @@ static TArray<FInstallInfo> CollectPathsFromRegistry( const Windows::HKEY RootKe
 
 TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FString& Path, FInstallInfo::EInstallType InstallType)
 {
-	if(!FPaths::FileExists(Path)) return {};
+	if(!FPaths::FileExists(Path))
+	{
+		return {};
+	}
 	
 	const FString PatternString(TEXT("(.*)(?:\\\\|/)bin"));
 	const FRegexPattern Pattern(PatternString);
 	FRegexMatcher RiderPathMatcher(Pattern, Path);
-	if (!RiderPathMatcher.FindNext()) return {};
+	if (!RiderPathMatcher.FindNext())
+	{
+		return {};
+	}
 
 	const FString RiderDir = RiderPathMatcher.GetCaptureGroup(1);
 	const FString RiderCppPluginPath = FPaths::Combine(RiderDir, TEXT("plugins"), TEXT("rider-cpp"));
-	if (!FPaths::DirectoryExists(RiderCppPluginPath)) return {};
+	if (!FPaths::DirectoryExists(RiderCppPluginPath))
+	{
+		return {};
+	}
 	
 	FInstallInfo Info;
 	Info.Path = Path;
