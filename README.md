@@ -16,7 +16,7 @@ RiderSourceCodeAccess is a plugin for Unreal Engine, available through [Marketpl
 
 # How to add this plugin manually (not recommened)
 ## How to add to Game project
-1. Go to ["Releases" page](https://github.com/JetBrains/RiderSourceCodeAccess/releases) and download version of plugin for your version of Unreal Engine; 
+1. Get the source code of the [master branch](https://github.com/JetBrains/RiderSourceCodeAccess/archive/refs/heads/master.zip); 
 2. Unzip `RiderSourceCodeAccess.zip` to `RiderSourceCodeAccess` folder;
 3. Copy `RiderSourceCodeAccess` folder to `{GameProjectRoot}/Plugins/Developer`;
   a. If `{GameProjectRoot}/Plugins/Developer` does not exist, create it;
@@ -28,7 +28,7 @@ RiderSourceCodeAccess is a plugin for Unreal Engine, available through [Marketpl
 
 ## How to add to Engine project
 ### Unreal Engine is built from source code   
-1. Go to ["Releases" page](https://github.com/JetBrains/RiderSourceCodeAccess/releases) and download version of plugin for your version of Unreal Engine; 
+1. Get the source code of the [master branch](https://github.com/JetBrains/RiderSourceCodeAccess/archive/refs/heads/master.zip); 
 2. Unzip `RiderSourceCodeAccess.zip` to `RiderSourceCodeAccess` folder;
 3. Copy `RiderSourceCodeAccess` folder to `{UnrealEngineRoot}/Engine/Plugins/Developer`;
   a. If `{UnrealEngineRoot}/Engine/Plugins/Developer` does not exist, create it;
@@ -39,7 +39,7 @@ RiderSourceCodeAccess is a plugin for Unreal Engine, available through [Marketpl
 8. Select Rider from drop down list. NB: only Rider with C++ plugins will be available from drop down list.
 
 ### Unreal Engine is downloaded from Epic Games Store
-1. Go to ["Releases" page](https://github.com/JetBrains/RiderSourceCodeAccess/releases) and download version of plugin for your version of Unreal Engine; 
+1. Get the source code of the [master branch](https://github.com/JetBrains/RiderSourceCodeAccess/archive/refs/heads/master.zip); 
 2. Unzip `RiderSourceCodeAccess.zip` to `RiderSourceCodeAccess` folder;
 3. Copy `RiderSourceCodeAccess` folder to `{UnrealProjectRoot}/Plugins/Developer`;
   a. If `{UnrealProjectRoot}/Plugins/Developer` does not exist, create it;
