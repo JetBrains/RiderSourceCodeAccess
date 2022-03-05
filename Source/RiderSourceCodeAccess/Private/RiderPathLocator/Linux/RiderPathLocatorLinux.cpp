@@ -90,7 +90,7 @@ static TArray<FInstallInfo> GetManuallyInstalledRiders()
 
 	for(const FString& RiderPath: RiderPaths)
 	{
-		FString FullPath = FPaths::Combine(FOptPath, RiderPath);
+		FString FullPath = FPaths::Combine(FOptPath, RiderPath, TEXT("bin/rider.sh"));
 		TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(FullPath, FInstallInfo::EInstallType::Installed);
 		if(InstallInfo.IsSet())
 		{
