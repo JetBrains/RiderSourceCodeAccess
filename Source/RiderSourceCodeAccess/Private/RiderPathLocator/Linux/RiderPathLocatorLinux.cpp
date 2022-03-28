@@ -1,5 +1,6 @@
 #include "RiderPathLocator/RiderPathLocator.h"
 
+#include "Internationalization/Regex.h"
 #include "HAL/FileManager.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
@@ -69,8 +70,8 @@ static TArray<FInstallInfo> GetManuallyInstalledRiders()
 	TArray<FString> RiderPaths;
 
 	const FString FHomePath = GetHomePath();
-	const FString HomePathMask = FPaths::Combine(FHomePath, TEXT("Rider*"));
-	
+	const FString HomePathMask = FPaths::Combine(FHomePath, TEXT("Rider.sh"));
+
 	IFileManager::Get().FindFiles(RiderPaths, *HomePathMask, false, true);
 
 	for(const FString& RiderPath: RiderPaths)
@@ -84,8 +85,8 @@ static TArray<FInstallInfo> GetManuallyInstalledRiders()
 	}
 
 	const FString FOptPath = TEXT("/opt");
-	const FString OptPathMask = FPaths::Combine(FOptPath, TEXT("Rider*"));
-	
+	const FString OptPathMask = FPaths::Combine(FOptPath, TEXT("Rider.sh"));
+
 	IFileManager::Get().FindFiles(RiderPaths, *OptPathMask, false, true);
 
 	for(const FString& RiderPath: RiderPaths)
@@ -110,9 +111,9 @@ static FString GetToolboxPath()
 
 static TArray<FInstallInfo> GetInstalledRidersWithMdfind()
 {
-    int32 ReturnCode;
-    FString OutResults;
-    FString OutErrors;
+	int32 ReturnCode;
+	FString OutResults;
+	FString OutErrors;
 
 	// avoid trying to run mdfind if it doesnt exists
 	if (!FPaths::FileExists(TEXT("/usr/bin/mdfind")))
@@ -120,13 +121,13 @@ static TArray<FInstallInfo> GetInstalledRidersWithMdfind()
 		return {};
 	}
 
-    FPlatformProcess::ExecProcess(TEXT("/usr/bin/mdfind"), TEXT("\"kMDItemKind == Application\""), &ReturnCode, &OutResults, &OutErrors);
-    if (ReturnCode != 0)
+	FPlatformProcess::ExecProcess(TEXT("/usr/bin/mdfind"), TEXT("\"kMDItemKind == Application\""), &ReturnCode, &OutResults, &OutErrors);
+	if (ReturnCode != 0)
 	{
 		return {};
 	}
 
-    TArray<FString> RiderPaths;
+	TArray<FString> RiderPaths;
 	FString TmpString;
 	while(OutResults.Split(TEXT("\n"), &TmpString, &OutResults))
 	{
@@ -135,16 +136,16 @@ static TArray<FInstallInfo> GetInstalledRidersWithMdfind()
 			RiderPaths.Add(TmpString);
 		}
 	}
-    TArray<FInstallInfo> Result;
-    for(const FString& RiderPath: RiderPaths)
-    {
-        TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(RiderPath, FInstallInfo::EInstallType::Installed);
-        if(InstallInfo.IsSet())
+	TArray<FInstallInfo> Result;
+	for(const FString& RiderPath: RiderPaths)
+	{
+		TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(RiderPath, FInstallInfo::EInstallType::Installed);
+		if(InstallInfo.IsSet())
 		{
 			Result.Add(InstallInfo.GetValue());
 		}
-    }
-    return Result;
+	}
+	return Result;
 }
 
 TSet<FInstallInfo> FRiderPathLocator::CollectAllPaths()
@@ -152,7 +153,7 @@ TSet<FInstallInfo> FRiderPathLocator::CollectAllPaths()
 	TSet<FInstallInfo> InstallInfos;
 	InstallInfos.Append(GetInstalledRidersWithMdfind());
 	InstallInfos.Append(GetManuallyInstalledRiders());
-	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(), "Rider*"));
+	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(), "Rider.sh"));
 	InstallInfos.Append(GetInstallInfosFromResourceFile());
 	return InstallInfos;
 }
