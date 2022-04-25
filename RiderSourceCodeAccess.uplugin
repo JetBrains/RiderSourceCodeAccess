@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 2,
-	"VersionName": "1.6",
+	"VersionName": "1.7",
 	"FriendlyName": "Rider Integration",
 	"Description": "Allows access to source code in Rider.",
 	"Category": "Programming",
@@ -19,7 +19,7 @@
 			"Name": "RiderSourceCodeAccess",
 			"Type": "EditorNoCommandlet",
 			"LoadingPhase": "Default",
-			"WhitelistPlatforms": [ "Win64", "Mac", "Linux" ]
+			"PlatformAllowList": [ "Win64", "Mac", "Linux" ]
 		}
 	]
 }

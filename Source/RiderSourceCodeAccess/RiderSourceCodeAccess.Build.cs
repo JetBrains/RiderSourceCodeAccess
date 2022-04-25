@@ -15,12 +15,14 @@ namespace UnrealBuildTool.Rules
                     "DesktopPlatform",
 					"Projects",
 					"Json",
-					"Projects"
+					"Projects",
+					"Slate"
 				}
 			);
 
 			if (Target.Type == TargetType.Editor)
 			{
+				PrivateDependencyModuleNames.Add("EditorFramework");
 				PrivateDependencyModuleNames.Add("UnrealEd");
 				PrivateDependencyModuleNames.Add("GameProjectGeneration");
 			}

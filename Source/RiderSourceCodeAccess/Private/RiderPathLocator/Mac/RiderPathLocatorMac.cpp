@@ -1,3 +1,5 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
 #include "RiderPathLocator/RiderPathLocator.h"
 
 #include "HAL/FileManager.h"
@@ -21,7 +23,7 @@ TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FSt
 	{
 		return {};
 	}
-	
+
 	FInstallInfo Info;
 	Info.Path = FPaths::Combine(PathToRiderApp, TEXT("Contents"), TEXT("MacOS"), TEXT("rider"));
 	Info.InstallType = InstallType;
@@ -67,9 +69,9 @@ static FString GetToolboxPath()
 
 static TArray<FInstallInfo> GetInstalledRidersWithMdfind()
 {
-    int32 ReturnCode;
-    FString OutResults;
-    FString OutErrors;
+	int32 ReturnCode;
+	FString OutResults;
+	FString OutErrors;
 
 	// avoid trying to run mdfind if it doesnt exists
 	if (!FPaths::FileExists(TEXT("/usr/bin/mdfind")))
@@ -77,31 +79,31 @@ static TArray<FInstallInfo> GetInstalledRidersWithMdfind()
 		return {};
 	}
 
-    FPlatformProcess::ExecProcess(TEXT("/usr/bin/mdfind"), TEXT("\"kMDItemKind == Application\""), &ReturnCode, &OutResults, &OutErrors);
-    if (ReturnCode != 0)
+	FPlatformProcess::ExecProcess(TEXT("/usr/bin/mdfind"), TEXT("\"kMDItemKind == Application\""), &ReturnCode, &OutResults, &OutErrors);
+	if (ReturnCode != 0)
 	{
 		return {};
 	}
 
-    TArray<FString> RiderPaths;
+	TArray<FString> RiderPaths;
 	FString TmpString;
 	while(OutResults.Split(TEXT("\n"), &TmpString, &OutResults))
 	{
 		if(TmpString.Contains(TEXT("Rider")))
 		{
 			RiderPaths.Add(TmpString);
-		}			
+		}
 	}
-    TArray<FInstallInfo> Result;
-    for(const FString& RiderPath: RiderPaths)
-    {
-        TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(RiderPath, FInstallInfo::EInstallType::Installed);
-        if(InstallInfo.IsSet())
+	TArray<FInstallInfo> Result;
+	for(const FString& RiderPath: RiderPaths)
+	{
+		TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(RiderPath, FInstallInfo::EInstallType::Installed);
+		if(InstallInfo.IsSet())
 		{
 			Result.Add(InstallInfo.GetValue());
 		}
-    }
-    return Result;
+	}
+	return Result;
 }
 
 TSet<FInstallInfo> FRiderPathLocator::CollectAllPaths()
