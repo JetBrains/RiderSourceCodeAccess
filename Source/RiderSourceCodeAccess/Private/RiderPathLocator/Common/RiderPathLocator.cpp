@@ -1,5 +1,6 @@
-#include "RiderPathLocator/RiderPathLocator.h"
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
+#include "RiderPathLocator/RiderPathLocator.h"
 #include "Dom/JsonObject.h"
 #include "Interfaces/IPluginManager.h"
 #include "Internationalization/Regex.h"
