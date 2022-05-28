@@ -100,6 +100,14 @@ static TArray<FInstallInfo> GetManuallyInstalledRiders()
 			Result.Add(InstallInfo.GetValue());
 		}
 	}
+
+	FString FullPath = TEXT("/snap/rider/current/bin/rider.sh");
+	TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(FullPath, FInstallInfo::EInstallType::Installed);
+	if(InstallInfo.IsSet())
+	{
+		Result.Add(InstallInfo.GetValue());
+	}
+
 	return Result;
 }
 
