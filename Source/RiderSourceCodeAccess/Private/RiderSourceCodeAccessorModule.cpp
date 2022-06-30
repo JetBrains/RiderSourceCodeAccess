@@ -44,7 +44,7 @@ void FRiderSourceCodeAccessModule::GenerateSlnAccessors(const TArray<FInstallInf
 		for (const FInstallInfo& InstallInfo : InstallInfos)
 		{
 			TSharedRef<FRiderSourceCodeAccessor> RiderSourceCodeAccessor = MakeShareable(new FRiderSourceCodeAccessor());
-			RiderSourceCodeAccessor->Init(InstallInfo, FRiderSourceCodeAccessor::EProjectModel::Sln);
+			RiderSourceCodeAccessor->Init(InstallInfo, FRiderSourceCodeAccessor::EProjectModel::Sln, RiderSourceCodeAccessors);
 			IModularFeatures::Get().RegisterModularFeature(FRiderSourceCodeAccessor::FeatureType(), &RiderSourceCodeAccessor.Get());
 			RiderSourceCodeAccessors.Add(RiderSourceCodeAccessor->GetFName(), RiderSourceCodeAccessor);
 		}
@@ -53,6 +53,7 @@ void FRiderSourceCodeAccessModule::GenerateSlnAccessors(const TArray<FInstallInf
 
 	const TSharedRef<FRiderSourceCodeAccessor> RiderSourceCodeAccessor = MakeShareable(new FRiderSourceCodeAccessor());
 	RiderSourceCodeAccessor->Init(InstallInfos.Last(), FRiderSourceCodeAccessor::EProjectModel::Sln,
+	                              RiderSourceCodeAccessors,
 	                              FRiderSourceCodeAccessor::EAccessType::Aggregate);
 	IModularFeatures::Get().RegisterModularFeature(FRiderSourceCodeAccessor::FeatureType(), &RiderSourceCodeAccessor.Get());
 	RiderSourceCodeAccessors.Add(TEXT("Rider"), RiderSourceCodeAccessor);
@@ -73,7 +74,7 @@ void FRiderSourceCodeAccessModule::GenerateUprojectAccessors(const TArray<FInsta
 		for (const FInstallInfo& UprojectInfo : UprojectInfos)
 		{
 			TSharedRef<FRiderSourceCodeAccessor> RiderSourceCodeAccessor = MakeShareable(new FRiderSourceCodeAccessor());
-			RiderSourceCodeAccessor->Init(UprojectInfo, FRiderSourceCodeAccessor::EProjectModel::Uproject);
+			RiderSourceCodeAccessor->Init(UprojectInfo, FRiderSourceCodeAccessor::EProjectModel::Uproject, RiderSourceCodeAccessors);
 			IModularFeatures::Get().RegisterModularFeature(FRiderSourceCodeAccessor::FeatureType(), &RiderSourceCodeAccessor.Get());
 			RiderSourceCodeAccessors.Add(RiderSourceCodeAccessor->GetFName(), RiderSourceCodeAccessor);
 		}
@@ -81,7 +82,8 @@ void FRiderSourceCodeAccessModule::GenerateUprojectAccessors(const TArray<FInsta
 
 	const TSharedRef<FRiderSourceCodeAccessor> RiderSourceCodeAccessor = MakeShareable(new FRiderSourceCodeAccessor());
 	RiderSourceCodeAccessor->Init(InstallInfos.Last(), FRiderSourceCodeAccessor::EProjectModel::Uproject,
-                                  FRiderSourceCodeAccessor::EAccessType::Aggregate);
+	                              RiderSourceCodeAccessors,
+	                              FRiderSourceCodeAccessor::EAccessType::Aggregate);
 	IModularFeatures::Get().RegisterModularFeature(FRiderSourceCodeAccessor::FeatureType(), &RiderSourceCodeAccessor.Get());
 	FString AccessorName = TEXT("Rider uproject");
 	if(InstallInfos.Last().SupportUprojectState == FInstallInfo::ESupportUproject::Beta)

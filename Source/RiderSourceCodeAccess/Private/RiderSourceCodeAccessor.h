@@ -23,8 +23,10 @@ public:
 		Sln,
 		Uproject
 	};
-	
-	void Init(const FInstallInfo& Info, EProjectModel ProjectModel, EAccessType Type = EAccessType::Direct);
+
+	void Init(const FInstallInfo& Info, const EProjectModel &ProjectModel,
+	          const TMap<FName, TSharedRef<ISourceCodeAccessor>> &RiderSourceCodeAccessors,
+	          const EAccessType Type = EAccessType::Direct);
 
 	/** ISourceCodeAccessor implementation */
 	virtual void RefreshAvailability() override;

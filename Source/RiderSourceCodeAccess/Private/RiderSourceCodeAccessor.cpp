@@ -268,7 +268,9 @@ bool FRiderSourceCodeAccessor::SaveAllOpenDocuments() const
 	return false;
 }
 
-void FRiderSourceCodeAccessor::Init(const FInstallInfo& Info, EProjectModel ProjectModel, EAccessType Type)
+void FRiderSourceCodeAccessor::Init(const FInstallInfo& Info, const EProjectModel& ProjectModel,
+                                    const TMap<FName, TSharedRef<ISourceCodeAccessor>>& RiderSourceCodeAccessors,
+                                    const EAccessType Type)
 {
 	Model = ProjectModel; 
 	ExecutablePath = Info.Path;
@@ -290,6 +292,14 @@ void FRiderSourceCodeAccessor::Init(const FInstallInfo& Info, EProjectModel Proj
 	if(Type == EAccessType::Direct)
 	{
 		NewName = *FString::Format(TEXT("Rider {0} {1}{2}"), { Info.Version.ToString(), SuffixText, UprojectSuffix });
+		// Modify name if there are the same versions of Rider
+		FString tempName = NewName;
+		int index = 1;
+		while (RiderSourceCodeAccessors.Contains(FName(tempName)))
+		{
+			tempName = FString::Format(TEXT("{0} ({1})"), { NewName, index++});
+		}
+		NewName = tempName;
 	}
 	else
 	{
