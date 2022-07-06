@@ -14,5 +14,5 @@ public:
 private:
 	void GenerateSlnAccessors(const TArray<struct FInstallInfo>& InstallInfos);
 	void GenerateUprojectAccessors(const TArray<struct FInstallInfo>& InstallInfos);
-	TMap<FName, TSharedRef<ISourceCodeAccessor>> RiderSourceCodeAccessors;
+	TMultiMap<FName, TSharedRef<ISourceCodeAccessor>> RiderSourceCodeAccessors;
 };
