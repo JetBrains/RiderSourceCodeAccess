@@ -71,34 +71,27 @@ static TArray<FInstallInfo> GetManuallyInstalledRiders()
 	TArray<FInstallInfo> Result;
 	TArray<FString> RiderPaths;
 
-	const FString FHomePath = GetHomePath();
-	const FString HomePathMask = FPaths::Combine(FHomePath, TEXT("Rider.sh"));
+	const TArray RiderLookupPaths = {
+		GetHomePath(),
+		FString(TEXT("/opt")),
+		FPaths::Combine(TEXT("/usr"), TEXT("local"), TEXT("bin"))
+	};
 
-	IFileManager::Get().FindFiles(RiderPaths, *HomePathMask, false, true);
-
-	for(const FString& RiderPath: RiderPaths)
+	for(const FString& RiderLookupPath: RiderLookupPaths)
 	{
-		FString FullPath = FPaths::Combine(FHomePath, RiderPath);
-		TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(FullPath, FInstallInfo::EInstallType::Installed);
-		if(InstallInfo.IsSet())
+		FString RiderLookupPathMask = FPaths::Combine(RiderLookupPath,TEXT("*Rider*"));
+		IFileManager::Get().FindFiles(RiderPaths, *RiderLookupPathMask, false, true);
+
+		for(const FString& RiderPath: RiderPaths)
 		{
-			Result.Add(InstallInfo.GetValue());
+			FString FullPath = FPaths::Combine(RiderLookupPath, RiderPath, TEXT("bin"), TEXT("rider.sh"));
+			TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(FullPath, FInstallInfo::EInstallType::Installed);
+			if(InstallInfo.IsSet())
+			{
+				Result.Add(InstallInfo.GetValue());
+			}
 		}
-	}
-
-	const FString FOptPath = TEXT("/opt");
-	const FString OptPathMask = FPaths::Combine(FOptPath, TEXT("Rider.sh"));
-
-	IFileManager::Get().FindFiles(RiderPaths, *OptPathMask, false, true);
-
-	for(const FString& RiderPath: RiderPaths)
-	{
-		FString FullPath = FPaths::Combine(FOptPath, RiderPath);
-		TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(FullPath, FInstallInfo::EInstallType::Installed);
-		if(InstallInfo.IsSet())
-		{
-			Result.Add(InstallInfo.GetValue());
-		}
+		RiderPaths.Empty();
 	}
 
 	FString FullPath = TEXT("/snap/rider/current/bin/rider.sh");
