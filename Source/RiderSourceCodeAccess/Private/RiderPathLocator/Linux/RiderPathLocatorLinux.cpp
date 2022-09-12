@@ -112,19 +112,17 @@ static FString GetToolboxPath()
 	return FPaths::Combine(LocalAppData, TEXT("JetBrains"), TEXT("Toolbox"));
 }
 
-static TArray<FInstallInfo> GetInstalledRidersWithMdfind()
+static TArray<FInstallInfo> GetInstalledRidersWithLocate()
 {
 	int32 ReturnCode;
 	FString OutResults;
 	FString OutErrors;
-
-	// avoid trying to run mdfind if it doesnt exists
-	if (!FPaths::FileExists(TEXT("/usr/bin/mdfind")))
+	if (!FPaths::FileExists(TEXT("/usr/bin/locate")))
 	{
 		return {};
 	}
 
-	FPlatformProcess::ExecProcess(TEXT("/usr/bin/mdfind"), TEXT("\"kMDItemKind == Application\""), &ReturnCode, &OutResults, &OutErrors);
+	FPlatformProcess::ExecProcess(TEXT("/usr/bin/locate"), TEXT("bin/rider.sh"), &ReturnCode, &OutResults, &OutErrors);
 	if (ReturnCode != 0)
 	{
 		return {};
@@ -134,7 +132,7 @@ static TArray<FInstallInfo> GetInstalledRidersWithMdfind()
 	FString TmpString;
 	while(OutResults.Split(TEXT("\n"), &TmpString, &OutResults))
 	{
-		if(TmpString.Contains(TEXT("Rider")))
+		if(TmpString.Contains(TEXT("rider")))
 		{
 			RiderPaths.Add(TmpString);
 		}
@@ -154,7 +152,7 @@ static TArray<FInstallInfo> GetInstalledRidersWithMdfind()
 TSet<FInstallInfo> FRiderPathLocator::CollectAllPaths()
 {
 	TSet<FInstallInfo> InstallInfos;
-	InstallInfos.Append(GetInstalledRidersWithMdfind());
+	InstallInfos.Append(GetInstalledRidersWithLocate());
 	InstallInfos.Append(GetManuallyInstalledRiders());
 	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(), "Rider.sh"));
 	InstallInfos.Append(GetInstallInfosFromResourceFile());
