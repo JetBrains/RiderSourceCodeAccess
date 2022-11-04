@@ -22,7 +22,9 @@ namespace UnrealBuildTool.Rules
 
 			if (Target.Type == TargetType.Editor)
 			{
+				#if UE_5_0_OR_LATER
 				PrivateDependencyModuleNames.Add("EditorFramework");
+				#endif
 				PrivateDependencyModuleNames.Add("UnrealEd");
 				PrivateDependencyModuleNames.Add("GameProjectGeneration");
 			}
