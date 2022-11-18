@@ -3,9 +3,8 @@
 #include "RiderPathLocator/RiderPathLocator.h"
 
 #include "HAL/FileManager.h"
-#include "Misc/FileHelper.h"
+#include "HAL/PlatformProcess.h"
 #include "Misc/Paths.h"
-#include "Serialization/JsonSerializer.h"
 
 #include "Runtime/Launch/Resources/Version.h"
 

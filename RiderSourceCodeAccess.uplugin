@@ -8,7 +8,7 @@
 	"CreatedBy": "JetBrains",
 	"CreatedByURL": "https://www.jetbrains.com/",
 	"DocsURL": "https://github.com/JetBrains/RiderSourceCodeAccess",
-	"MarketplaceURL" : "com.epicgames.launcher://ue/marketplace/product/35b0d39e4cee4bccb2dabf04a4c911bb",
+	"MarketplaceURL" : "",
 	"SupportURL": "",
 	"EnabledByDefault": true,
 	"CanContainContent": false,
@@ -19,7 +19,7 @@
 			"Name": "RiderSourceCodeAccess",
 			"Type": "EditorNoCommandlet",
 			"LoadingPhase": "Default",
-			"WhitelistPlatforms": [ "Win64", "Mac", "Linux" ]
+			"PlatformAllowList": [ "Win64", "Mac", "Linux" ]
 		}
 	]
 }
