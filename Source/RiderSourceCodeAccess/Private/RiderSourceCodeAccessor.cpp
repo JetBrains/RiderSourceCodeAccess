@@ -319,12 +319,12 @@ void FRiderSourceCodeAccessor::CachePathToSln() const
 
 		if (!FUProjectDictionary(FPaths::RootDir()).IsForeignProject(CachedSolutionPath))
 		{
-			FString MasterProjectName;
-			if (!FFileHelper::LoadFileToString(MasterProjectName, *(FPaths::EngineIntermediateDir() / TEXT("ProjectFiles/MasterProjectName.txt"))))
+			FString MainProjectName;
+			if (!FFileHelper::LoadFileToString(MainProjectName, *(FPaths::EngineIntermediateDir() / TEXT("ProjectFiles/MasterProjectName.txt"))))
 			{
-				MasterProjectName = "UE5";
+				MainProjectName = "UE5";
 			}
-			CachedSolutionPath = FPaths::Combine(FPaths::RootDir(), MasterProjectName + TEXT(".sln"));
+			CachedSolutionPath = FPaths::Combine(FPaths::RootDir(), MainProjectName + TEXT(".sln"));
 		}
 		else
 		{
