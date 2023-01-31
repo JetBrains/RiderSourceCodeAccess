@@ -1,3 +1,5 @@
+[![official JetBrains project](https://jb.gg/badges/official-flat-square.svg)](https://confluence.jetbrains.com/display/ALL/JetBrains+on+GitHub)
+
 # Description
 RiderSourceCodeAccess is a plugin for Unreal Engine, available through [Marketplace page](https://www.unrealengine.com/marketplace/en-US/product/rider-source-code-access) that will add an option to select ["Rider for Unreal Engine"](https://www.jetbrains.com/rider/unreal/) as your source code editor in Unreal Editor.
 
