@@ -9,6 +9,13 @@ struct FVersion
 {	
 	bool IsInitialized() const { return Versions.Num() != 0; }
 
+	FVersion(){}
+
+	explicit FVersion(const FString& VersionString)
+	{
+		*this = VersionString;
+	}
+
 	void operator=(const FString& VersionString)
 	{
 		TArray<FString> Output;
@@ -59,7 +66,16 @@ struct FVersion
 			if(LeftElement > RightElement) return false;
 		}
 		return LeftSize < RightSize;
-		
+	}
+
+	bool operator==(const FVersion& rhs) const
+	{
+		return !(*this < rhs) && !(rhs < *this); 
+	}
+
+	bool operator!=(const FVersion& rhs) const
+	{
+		return (*this < rhs) || (rhs < *this); 
 	}
 
 	FString ToString() const
@@ -131,4 +147,6 @@ private:
 	static TArray<FInstallInfo> GetInstallInfosFromToolbox(const FString& ToolboxPath, const FString& Pattern);
 	static TArray<FInstallInfo> GetInstallInfosFromResourceFile();
 	static TArray<FInstallInfo> GetInstallInfos(const FString& ToolboxRiderRootPath, const FString& Pattern, FInstallInfo::EInstallType InstallType);
+	static FString GetHistoryJsonPath(const FString& RiderPath);
+	static FVersion GetLastBuildVersion(const FString& HistoryJsonPath);
 };
