@@ -16,7 +16,8 @@ namespace UnrealBuildTool.Rules
 					"Projects",
 					"Json",
 					"Projects",
-					"Slate"
+					"Slate",
+					"SlateCore"
 				}
 			);
 
