@@ -19,7 +19,7 @@
 			"Name": "RiderSourceCodeAccess",
 			"Type": "EditorNoCommandlet",
 			"LoadingPhase": "Default",
-			"PlatformAllowList": [ "Win64", "Mac", "Linux" ]
+			"PlatformAllowList": [ "Win64", "Mac" ]
 		}
 	]
 }
