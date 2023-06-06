@@ -1,4 +1,4 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 namespace UnrealBuildTool.Rules
 {
@@ -16,16 +16,21 @@ namespace UnrealBuildTool.Rules
 					"Projects",
 					"Json",
 					"Projects",
-					"Slate"
+					"Slate",
+					"SlateCore"
 				}
 			);
 
 			if (Target.Type == TargetType.Editor)
 			{
+				#if UE_5_0_OR_LATER
 				PrivateDependencyModuleNames.Add("EditorFramework");
+				#endif
 				PrivateDependencyModuleNames.Add("UnrealEd");
 				PrivateDependencyModuleNames.Add("GameProjectGeneration");
 			}
+
+			ShortName = "RiderSCA";
 		}
 	}
 }

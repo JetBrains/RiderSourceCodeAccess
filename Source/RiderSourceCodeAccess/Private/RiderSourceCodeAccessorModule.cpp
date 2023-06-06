@@ -7,13 +7,17 @@
 
 #include "Modules/ModuleManager.h"
 #include "Features/IModularFeatures.h"
+#include "HAL/LowLevelMemTracker.h"
 
 #define LOCTEXT_NAMESPACE "RiderSourceCodeAccessor"
+
+LLM_DEFINE_TAG(RiderSourceCodeAccess);
 
 IMPLEMENT_MODULE(FRiderSourceCodeAccessModule, RiderSourceCodeAccess);
 
 void FRiderSourceCodeAccessModule::StartupModule()
 {
+	LLM_SCOPE_BYTAG(RiderSourceCodeAccess);
 	TArray<FInstallInfo> InstallInfos = FRiderPathLocator::CollectAllPaths().Array();
 	InstallInfos.Sort();
 	GenerateUprojectAccessors(InstallInfos);
