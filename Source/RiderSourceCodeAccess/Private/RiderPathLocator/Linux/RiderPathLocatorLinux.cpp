@@ -121,7 +121,7 @@ static TArray<FInstallInfo> GetInstalledRidersWithLocate()
 		return {};
 	}
 
-	FPlatformProcess::ExecProcess(TEXT("/usr/bin/locate"), TEXT("bin/rider.sh"), &ReturnCode, &OutResults, &OutErrors);
+	FPlatformProcess::ExecProcess(TEXT("/usr/bin/locate"), TEXT("-e bin/rider.sh"), &ReturnCode, &OutResults, &OutErrors);
 	if (ReturnCode != 0)
 	{
 		return {};
@@ -131,11 +131,13 @@ static TArray<FInstallInfo> GetInstalledRidersWithLocate()
 	FString TmpString;
 	while(OutResults.Split(TEXT("\n"), &TmpString, &OutResults))
 	{
-		if(TmpString.Contains(TEXT("rider")))
+		if(TmpString.Contains(TEXT("snapd")) || TmpString.Contains(TEXT(".local")) || TmpString.Contains(TEXT("/opt")))
 		{
-			RiderPaths.Add(TmpString);
+			continue;
 		}
+		RiderPaths.Add(TmpString);
 	}
+
 	TArray<FInstallInfo> Result;
 	for(const FString& RiderPath: RiderPaths)
 	{
