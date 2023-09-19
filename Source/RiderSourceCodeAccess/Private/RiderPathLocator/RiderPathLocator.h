@@ -136,14 +136,17 @@ struct FInstallInfo
     }
 };
 
+template <typename OptionalType> struct TOptional;
 class FRiderPathLocator
 {
 public:
 	// Platform specific implementation
 	static TOptional<FInstallInfo> GetInstallInfoFromRiderPath(const FString& Path, FInstallInfo::EInstallType InstallType);
+	static bool DirectoryExistsAndNonEmpty(const FString& Path);
 	static TSet<FInstallInfo> CollectAllPaths();
 private:
 	static void ParseProductInfoJson(FInstallInfo& Info, const FString& ProductInfoJsonPath);
+	static FString GetDefaultIDEInstallLocationForToolboxV2();
 	static TArray<FInstallInfo> GetInstallInfosFromToolbox(const FString& ToolboxPath, const FString& Pattern);
 	static TArray<FInstallInfo> GetInstallInfosFromResourceFile();
 	static TArray<FInstallInfo> GetInstallInfos(const FString& ToolboxRiderRootPath, const FString& Pattern, FInstallInfo::EInstallType InstallType);

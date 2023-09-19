@@ -100,7 +100,7 @@ FCommandLineInfo GetPlatformAppAndArgs(const FString& App, const FString& Args)
 
 bool CheckExecutable(const FString& App)
 {
-	if (FPaths::FileExists(App) || FPaths::DirectoryExists(App))
+	if(FPaths::FileExists(App) || FPaths::DirectoryExists(App))
 	{
 		return true;
 	}
@@ -113,16 +113,14 @@ bool CheckExecutable(const FString& App)
 	return false;
 }
 
-bool OpenRider(FString const& ExecutablePath, FString const& Params, FString const& ErrorMessage)
-{
+bool OpenRider(const FString& ExecutablePath, const FString& Params, const FString& ErrorMessage)
 	const FCommandLineInfo PlatformAppAndArgs = GetPlatformAppAndArgs(ExecutablePath, Params);
-
-	if (!CheckExecutable(PlatformAppAndArgs.App))
+	if(!CheckExecutable(PlatformAppAndArgs.App))
 	{
 		return false;
 	}
-
-	FProcHandle Proc = FPlatformProcess::CreateProc(*PlatformAppAndArgs.App, *PlatformAppAndArgs.Args, true, true, false, nullptr, 0, nullptr, nullptr);
+	FProcHandle Proc = FPlatformProcess::CreateProc(*PlatformAppAndArgs.App, *PlatformAppAndArgs.Args, true, true, false, nullptr, 0,
+													nullptr, nullptr);
 	const bool bResult = Proc.IsValid();
 	if (!bResult)
 	{
@@ -222,11 +220,7 @@ bool FRiderSourceCodeAccessor::OpenSolutionAtPath(const FString& InSolutionPath)
 	if (!bHasRiderInstalled) return false;
 
 	FString CorrectSolutionPath = InSolutionPath;
-	if (Model == EProjectModel::Uproject && !CorrectSolutionPath.EndsWith(".uproject"))
-	{
-		CorrectSolutionPath += ".uproject";
-	}
-	else if (!CorrectSolutionPath.EndsWith(".sln"))
+	if (!CorrectSolutionPath.EndsWith(".sln"))
 	{
 		CorrectSolutionPath += ".sln";
 	}

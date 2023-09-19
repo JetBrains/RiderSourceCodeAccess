@@ -4,6 +4,8 @@
 
 #include "ISourceCodeAccessor.h"
 
+template <typename OptionalType> struct TOptional;
+
 struct FInstallInfo;
 
 class FRiderSourceCodeAccessor : public ISourceCodeAccessor

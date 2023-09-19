@@ -1,5 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+#include "HAL/Platform.h"
+
+#if PLATFORM_LINUX
+
 #include "RiderPathLocator/RiderPathLocator.h"
 
 #include "Internationalization/Regex.h"
@@ -9,7 +13,11 @@
 
 #include "Runtime/Launch/Resources/Version.h"
 
-#if PLATFORM_LINUX
+FString FRiderPathLocator::GetDefaultIDEInstallLocationForToolboxV2()
+{
+	// V2 and V1 have the same path on Linux, we don't need to process it extra
+	return {};
+}
 
 TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FString& Path, FInstallInfo::EInstallType InstallType)
 {
@@ -28,7 +36,7 @@ TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FSt
 
 	const FString RiderDir = RiderPathMatcher.GetCaptureGroup(1);
 	const FString RiderCppPluginPath = FPaths::Combine(RiderDir, TEXT("plugins"), TEXT("rider-cpp"));
-	if (!FPaths::DirectoryExists(RiderCppPluginPath))
+	if (!DirectoryExistsAndNonEmpty(RiderCppPluginPath))
 	{
 		return {};
 	}

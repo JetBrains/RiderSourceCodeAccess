@@ -1,17 +1,19 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+#include "HAL/Platform.h"
+
+#if PLATFORM_WINDOWS
 #include "RiderPathLocator/RiderPathLocator.h"
 
 #include "Internationalization/Regex.h"
 #include "Misc/Paths.h"
 
 #include "Runtime/Launch/Resources/Version.h"
-
-#if PLATFORM_WINDOWS
-
 #include "Windows/WindowsPlatformMisc.h"
 #include "Windows/AllowWindowsPlatformTypes.h"
+THIRD_PARTY_INCLUDES_START
 #include <winreg.h>
+THIRD_PARTY_INCLUDES_END
 #include "Windows/HideWindowsPlatformTypes.h"
 
 static FString GetToolboxPath()
@@ -41,6 +43,12 @@ static FString GetToolboxPath(const Windows::HKEY RootKey, const FString& Regist
 	if (!ToolboxPathMatcher.FindNext()) return {};
 
 	return ToolboxPathMatcher.GetCaptureGroup(1);
+}
+
+FString FRiderPathLocator::GetDefaultIDEInstallLocationForToolboxV2()
+{
+	const FString LocalAppData = FPlatformMisc::GetEnvironmentVariable(TEXT("LOCALAPPDATA"));
+	return FPaths::Combine(LocalAppData, TEXT("Programs"));
 }
 
 static bool EnumerateRegistryKeys(HKEY Key, TArray<FString> &OutNames)
@@ -102,41 +110,76 @@ static LONG GetStringRegKey(const HKEY Key, const FString& ValueName, FString& V
 	}
 	return Result;
 }
-
 static TArray<FInstallInfo> CollectPathsFromRegistry( const Windows::HKEY RootKey, const FString& RegistryKey)
 {
 	TArray<FInstallInfo> InstallInfos;
 	HKEY Key;
 	const LONG Result = RegOpenKeyEx(RootKey, *RegistryKey, 0, KEY_READ, &Key);
-	if (Result == ERROR_SUCCESS)
+	if (Result != ERROR_SUCCESS) return InstallInfos;
+	
+	TArray<FString> Keys;
+	if (!EnumerateRegistryKeys(Key, Keys)) return InstallInfos;
+	
+	for (const FString& key : Keys)
 	{
-		TArray<FString> Keys;
-		if (EnumerateRegistryKeys(Key, Keys))
+		if (!key.Contains(TEXT("Rider"))) continue;
+
+		HKEY SubKey;
+		const LONG SubResult = RegOpenKeyEx(Key, *key, 0, KEY_READ, &SubKey);
+		if (SubResult != ERROR_SUCCESS) continue;
+
+		TArray<FString> Values;
+		if (!EnumerateRegistryValues(SubKey, Values)) continue;
+
+		for (const auto& Value : Values)
 		{
-			for (const FString& key : Keys)
+			if (Value != TEXT("InstallLocation")) continue;
+			FString InstallLocation;
+			if (GetStringRegKey(SubKey, Value, InstallLocation) != ERROR_SUCCESS) continue;
+			
+			const FString ExePath = FPaths::Combine(InstallLocation, TEXT("bin"), TEXT("rider64.exe"));
+			TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(ExePath, FInstallInfo::EInstallType::Installed);
+			if(InstallInfo.IsSet())
 			{
-				if (!key.Contains(TEXT("Rider"))) continue;
+				InstallInfos.Add(InstallInfo.GetValue());
+			}
+		}
+	}
 
-				HKEY SubKey;
-				const LONG SubResult = RegOpenKeyEx(Key, *key, 0, KEY_READ, &SubKey);
-				if (SubResult != ERROR_SUCCESS) continue;
+	return InstallInfos;
+}
 
-				TArray<FString> Values;
-				if (!EnumerateRegistryValues(SubKey, Values)) continue;
+static TArray<FInstallInfo> CollectDotUltimatePathsFromRegistry( const Windows::HKEY RootKey, const FString& RegistryKey)
+{
+	TArray<FInstallInfo> InstallInfos;
+	HKEY Key;
+	const LONG Result = RegOpenKeyEx(RootKey, *RegistryKey, 0, KEY_READ, &Key);
+	if (Result != ERROR_SUCCESS) return InstallInfos;
+	
+	TArray<FString> Keys;
+	if (!EnumerateRegistryKeys(Key, Keys)) return InstallInfos;
+	
+	for (const FString& key : Keys)
+	{
+		HKEY SubKey;
+		const LONG SubResult = RegOpenKeyEx(Key, *key, 0, KEY_READ, &SubKey);
+		if (SubResult != ERROR_SUCCESS) continue;
 
-				for (const auto& Value : Values)
-				{
-					if (Value != TEXT("InstallLocation")) continue;
-					FString InstallLocation;
-					if (GetStringRegKey(SubKey, Value, InstallLocation) != ERROR_SUCCESS) continue;
-					const FString ExePath = FPaths::Combine(InstallLocation, TEXT("bin"), TEXT("rider64.exe"));
-					TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(ExePath, FInstallInfo::EInstallType::Installed);
-					if(InstallInfo.IsSet())
-					{
-						InstallInfos.Add(InstallInfo.GetValue());
-					}
-				}
+		TArray<FString> Values;
+		if (!EnumerateRegistryValues(SubKey, Values)) continue;
 
+		for (const auto& Value : Values)
+		{
+			if (Value != TEXT("InstallDir")) continue;
+			
+			FString InstallLocation;
+			if (GetStringRegKey(SubKey, Value, InstallLocation) != ERROR_SUCCESS) continue;
+			
+			const FString ExePath = FPaths::Combine(InstallLocation, TEXT("bin"), TEXT("rider64.exe"));
+			TOptional<FInstallInfo> InstallInfo = FRiderPathLocator::GetInstallInfoFromRiderPath(ExePath, FInstallInfo::EInstallType::Installed);
+			if(InstallInfo.IsSet())
+			{
+				InstallInfos.Add(InstallInfo.GetValue());
 			}
 		}
 	}
@@ -161,7 +204,7 @@ TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FSt
 
 	const FString RiderDir = RiderPathMatcher.GetCaptureGroup(1);
 	const FString RiderCppPluginPath = FPaths::Combine(RiderDir, TEXT("plugins"), TEXT("rider-cpp"));
-	if (!FPaths::DirectoryExists(RiderCppPluginPath))
+	if (!DirectoryExistsAndNonEmpty(RiderCppPluginPath))
 	{
 		return {};
 	}
@@ -188,15 +231,19 @@ TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FSt
 TSet<FInstallInfo> FRiderPathLocator::CollectAllPaths()
 {
 	TSet<FInstallInfo> InstallInfos;
+	InstallInfos.Append(CollectPathsFromRegistry(HKEY_CURRENT_USER, TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
+	InstallInfos.Append(CollectPathsFromRegistry(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
+	InstallInfos.Append(CollectPathsFromRegistry(HKEY_CURRENT_USER, TEXT("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
+	InstallInfos.Append(CollectPathsFromRegistry(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
+	InstallInfos.Append(CollectDotUltimatePathsFromRegistry(HKEY_CURRENT_USER, TEXT("SOFTWARE\\JetBrains\\Rider")));
+	InstallInfos.Append(CollectDotUltimatePathsFromRegistry(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\JetBrains\\Rider")));
+	InstallInfos.Append(CollectDotUltimatePathsFromRegistry(HKEY_CURRENT_USER, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\Rider")));
+	InstallInfos.Append(CollectDotUltimatePathsFromRegistry(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\WOW6432Node\\JetBrains\\Rider")));
 	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(), "rider64.exe"));
 	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(HKEY_CURRENT_USER, TEXT("Software\\JetBrains\\Toolbox\\")), "rider64.exe"));
 	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(HKEY_LOCAL_MACHINE, TEXT("Software\\JetBrains\\Toolbox\\")), "rider64.exe"));
 	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(HKEY_CURRENT_USER, TEXT("Software\\JetBrains s.r.o.\\JetBrainsToolbox\\")), "rider64.exe"));
 	InstallInfos.Append(GetInstallInfosFromToolbox(GetToolboxPath(HKEY_LOCAL_MACHINE, TEXT("Software\\JetBrains s.r.o.\\JetBrainsToolbox\\")), "rider64.exe"));
-	InstallInfos.Append(CollectPathsFromRegistry(HKEY_CURRENT_USER, TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
-	InstallInfos.Append(CollectPathsFromRegistry(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
-	InstallInfos.Append(CollectPathsFromRegistry(HKEY_CURRENT_USER, TEXT("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
-	InstallInfos.Append(CollectPathsFromRegistry(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall")));
 	InstallInfos.Append(GetInstallInfosFromResourceFile());
 	return InstallInfos;
 }

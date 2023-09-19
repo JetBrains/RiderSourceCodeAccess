@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 namespace UnrealBuildTool.Rules
 {
@@ -29,8 +29,6 @@ namespace UnrealBuildTool.Rules
 				PrivateDependencyModuleNames.Add("UnrealEd");
 				PrivateDependencyModuleNames.Add("GameProjectGeneration");
 			}
-
-			ShortName = "RiderSCA";
 		}
 	}
 }

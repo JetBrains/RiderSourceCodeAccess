@@ -1,5 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+#include "HAL/Platform.h"
+
+#if PLATFORM_MAC
+
 #include "RiderPathLocator/RiderPathLocator.h"
 
 #include "HAL/FileManager.h"
@@ -8,17 +12,15 @@
 
 #include "Runtime/Launch/Resources/Version.h"
 
-#if PLATFORM_MAC
-
 TOptional<FInstallInfo> FRiderPathLocator::GetInstallInfoFromRiderPath(const FString& PathToRiderApp, FInstallInfo::EInstallType InstallType)
 {
-	if(!FPaths::DirectoryExists(PathToRiderApp))
+	if(!DirectoryExistsAndNonEmpty(PathToRiderApp))
 	{
 		return {};
 	}
 
 	const FString RiderCppPluginPath = FPaths::Combine(PathToRiderApp, TEXT("Contents"), TEXT("plugins"), TEXT("rider-cpp"));
-	if (!FPaths::DirectoryExists(RiderCppPluginPath))
+	if (!DirectoryExistsAndNonEmpty(RiderCppPluginPath))
 	{
 		return {};
 	}
@@ -103,6 +105,18 @@ static TArray<FInstallInfo> GetInstalledRidersWithMdfind()
 		}
 	}
 	return Result;
+}
+
+FString FRiderPathLocator::GetDefaultIDEInstallLocationForToolboxV2()
+{
+#if ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION <= 20
+	TCHAR CHomePath[4096];
+	FPlatformMisc::GetEnvironmentVariable(TEXT("HOME"), CHomePath, ARRAY_COUNT(CHomePath));
+	const FString FHomePath = CHomePath;
+#else
+	const FString FHomePath = FPlatformMisc::GetEnvironmentVariable(TEXT("HOME"));
+#endif
+	return FPaths::Combine(FHomePath, TEXT("Applications"));
 }
 
 TSet<FInstallInfo> FRiderPathLocator::CollectAllPaths()
