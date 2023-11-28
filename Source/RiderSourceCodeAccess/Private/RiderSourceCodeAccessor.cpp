@@ -114,6 +114,7 @@ bool CheckExecutable(const FString& App)
 }
 
 bool OpenRider(const FString& ExecutablePath, const FString& Params, const FString& ErrorMessage)
+{
 	const FCommandLineInfo PlatformAppAndArgs = GetPlatformAppAndArgs(ExecutablePath, Params);
 	if(!CheckExecutable(PlatformAppAndArgs.App))
 	{
