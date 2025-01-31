@@ -1,5 +1,12 @@
 [![official JetBrains project](https://jb.gg/badges/official-flat-square.svg)](https://confluence.jetbrains.com/display/ALL/JetBrains+on+GitHub)
 
+# DISCLAIMER
+THIS PLUGIN IS A PART OF THE OFFICIAL UNREAL ENGINE SOURCE CODE STARTING WITH UE4.25.
+
+This repository is for backporting fixes ony. For example, if something has changed in the way Rider is installed and discovered, there's no way to update an older version of UE source code. In this case, we'll recommend to download this version of the plugin.
+
+In most of the cases, option to select Rider inside of the Unreal Editor should just work and doesn't require any additional changes.
+
 # Description
 RiderSourceCodeAccess is a plugin for Unreal Engine, available through [Marketplace page](https://www.unrealengine.com/marketplace/en-US/product/rider-source-code-access) that will add an option to select ["Rider for Unreal Engine"](https://www.jetbrains.com/rider/unreal/) as your source code editor in Unreal Editor.
 
